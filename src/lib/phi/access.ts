@@ -39,3 +39,16 @@ export async function listPatients(
   });
   return rows;
 }
+
+// Read a patient's eligibility-check history (newest first) AND log the access.
+export async function listCheckHistory(
+  client: any, ctx: PhiContext, patientId: string,
+): Promise<Patient[]> {
+  const { data } = await client
+    .from("eligibility_checks").select("*")
+    .eq("patient_id", patientId).is("deleted_at", null)
+    .order("check_date", { ascending: false });
+  const rows: Patient[] = data ?? [];
+  await logAccess(client, ctx, { action: "view_check_history", patient_id: patientId });
+  return rows;
+}
