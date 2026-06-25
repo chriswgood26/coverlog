@@ -48,4 +48,11 @@ describe("access_log future partitions", () => {
       asAdmin((q) => q(`select public.ensure_access_log_partition('2026-09-01')`)),
     ).resolves.toBeDefined();
   });
+
+  it("far-future partition 2028-01 exists with forced RLS", async () => {
+    const rows = await asAdmin(async (q) => (await q(
+      `select relforcerowsecurity from pg_class where relname = 'access_log_2028_01'`)).rows);
+    expect(rows.length).toBe(1);
+    expect(rows[0].relforcerowsecurity).toBe(true);
+  });
 });

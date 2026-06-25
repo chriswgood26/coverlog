@@ -40,7 +40,7 @@ begin
   update public.patients
     set status = p_status,
         last_checked = current_date,
-        next_due = p_next_due,
+        next_due = coalesce(p_next_due, next_due),
         primary_payer = coalesce(p_payer, primary_payer)
   where id = p_patient_id and deleted_at is null;
 

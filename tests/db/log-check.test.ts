@@ -41,6 +41,19 @@ describe("log_eligibility_check", () => {
     expect(patient.last_checked.toISOString().slice(0, 10)).toBe(today);
   });
 
+  it("null p_next_due preserves the existing next_due (no data-loss)", async () => {
+    // patientId already has next_due = 2026-09-01 from the first test.
+    await withClaims(USER_A, async (q) => {
+      await q(`select public.log_eligibility_check($1,'Aetna','verified',25,500,'second check',null)`,
+        [patientId]);
+    });
+    const patient = await asAdmin(async (q) =>
+      (await q(`select next_due from public.patients where id=$1`, [patientId])).rows[0],
+    );
+    // next_due must still be 2026-09-01, NOT null
+    expect(patient.next_due.toISOString().slice(0, 10)).toBe("2026-09-01");
+  });
+
   it("rejects a cross-org patient_id and writes no orphan check row", async () => {
     await expect(
       withClaims(USER_A, async (q) => {
