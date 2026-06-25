@@ -6,24 +6,16 @@ export type DashboardStats = {
   needsAttention: number;
 };
 
-async function count(
-  client: Pick<SupabaseClient, "from">, build: (q: any) => any,
-): Promise<number> {
-  const base = client.from("patients").select("*", { count: "exact", head: true }).is("deleted_at", null);
-  const { count, error } = await build(base);
-  if (error) throw new Error(`dashboard count failed: ${error.message}`);
-  return count ?? 0;
-}
-
 export async function getDashboardStats(
-  client: Pick<SupabaseClient, "from">,
+  client: Pick<SupabaseClient, "rpc">,
 ): Promise<DashboardStats> {
-  const today = new Date().toISOString().slice(0, 10);
-  const weekOut = new Date(Date.now() + 7 * 86400000).toISOString().slice(0, 10);
-  const [verifiedToday, dueThisWeek, needsAttention] = await Promise.all([
-    count(client, (q) => q.eq("status", "verified").eq("last_checked", today)),
-    count(client, (q) => q.gte("next_due", today).lte("next_due", weekOut)),
-    count(client, (q) => q.in("status", ["pending", "inactive"])),
-  ]);
-  return { verifiedToday, dueThisWeek, needsAttention };
+  const { data, error } = await client.rpc("dashboard_stats");
+  if (error) throw new Error(`dashboard stats failed: ${error.message}`);
+  // `returns table (...)` comes back as an array of rows; we expect exactly one.
+  const row = (data ?? [])[0] ?? {};
+  return {
+    verifiedToday: Number(row.verified_today ?? 0),
+    dueThisWeek: Number(row.due_this_week ?? 0),
+    needsAttention: Number(row.needs_attention ?? 0),
+  };
 }

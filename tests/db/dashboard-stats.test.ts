@@ -22,13 +22,15 @@ beforeAll(async () => {
 
 afterAll(async () => { await resetDb(); await pool.end(); });
 
-describe("dashboard stat SQL (RLS-scoped)", () => {
+describe("dashboard_stats() RPC (RLS-scoped)", () => {
   it("counts only the caller's org", async () => {
-    const stats = await withClaims(USER_A, async (q) => ({
-      verifiedToday: Number((await q(`select count(*) c from public.patients where deleted_at is null and status='verified' and last_checked=current_date`)).rows[0].c),
-      dueThisWeek: Number((await q(`select count(*) c from public.patients where deleted_at is null and next_due between current_date and current_date+7`)).rows[0].c),
-      needsAttention: Number((await q(`select count(*) c from public.patients where deleted_at is null and status in ('pending','inactive')`)).rows[0].c),
-    }));
-    expect(stats).toEqual({ verifiedToday: 1, dueThisWeek: 1, needsAttention: 2 });
+    const row = await withClaims(USER_A, async (q) =>
+      (await q(`select * from public.dashboard_stats()`)).rows[0],
+    );
+    expect({
+      verifiedToday: Number(row.verified_today),
+      dueThisWeek: Number(row.due_this_week),
+      needsAttention: Number(row.needs_attention),
+    }).toEqual({ verifiedToday: 1, dueThisWeek: 1, needsAttention: 2 });
   });
 });
