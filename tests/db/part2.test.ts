@@ -34,6 +34,25 @@ describe("access_log append-only", () => {
       withClaims(USER_A, async (q) =>
         q(`update public.access_log set action='tampered' where org_id=$1`, [ORG_A]),
       ),
-    ).rejects.toThrow(/row-level security|permission/i);
+    ).rejects.toThrow(/row-level security|permission|append-only/i);
+  });
+});
+
+describe("disclosure_log append-only", () => {
+  it("user A can insert and read a disclosure_log row", async () => {
+    const rows = await withClaims(USER_A, async (q) => {
+      await q(`insert into public.disclosure_log (org_id, action, purpose, disclosed_to)
+               values ($1,'records_release','treatment','Dr. Jones')`, [ORG_A]);
+      return (await q(`select action from public.disclosure_log`)).rows;
+    });
+    expect(rows.map((r: any) => r.action)).toEqual(["records_release"]);
+  });
+
+  it("user A cannot update a disclosure_log row (no update policy)", async () => {
+    await expect(
+      withClaims(USER_A, async (q) =>
+        q(`update public.disclosure_log set action='tampered' where org_id=$1`, [ORG_A]),
+      ),
+    ).rejects.toThrow(/row-level security|permission|append-only/i);
   });
 });

@@ -32,7 +32,7 @@ create table public.access_log (
   patient_id uuid references public.patients(id),
   patient_ids uuid[],
   query_context text,
-  occurred_at timestamptz default now(),
+  occurred_at timestamptz not null default now(),
   detail jsonb,
   primary key (id, occurred_at)
 ) partition by range (occurred_at);
@@ -69,14 +69,19 @@ create policy access_select on public.access_log
 -- UPDATE/DELETE (no policy = no visible rows), but does not raise an error.
 -- A statement-level trigger fires even when 0 rows match, ensuring the hard
 -- guarantee is enforced and makes the attempted mutation explicit as an error.
-create or replace function public.access_log_append_only()
-  returns trigger language plpgsql security definer as $$
+-- Applied to both 42 CFR Part 2 audit tables (access_log, disclosure_log).
+create or replace function public.audit_append_only()
+  returns trigger language plpgsql security definer
+  set search_path = public, pg_temp as $$
 begin
-  raise exception 'permission denied: access_log is append-only, % is not permitted', TG_OP
+  raise exception 'audit table %.% is append-only', tg_table_schema, tg_table_name
     using errcode = 'insufficient_privilege';
 end;
 $$;
 
-create trigger access_log_no_update
+create trigger access_log_append_only
   before update or delete on public.access_log
-  for each statement execute function public.access_log_append_only();
+  for each statement execute function public.audit_append_only();
+create trigger disclosure_log_append_only
+  before update or delete on public.disclosure_log
+  for each statement execute function public.audit_append_only();
