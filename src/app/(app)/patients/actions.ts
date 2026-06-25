@@ -26,6 +26,7 @@ export async function addPatientAction(formData: FormData) {
 
 export async function logCheckAction(formData: FormData) {
   const { supabase } = await ctxOrRedirect();
+  // Cross-org/nonexistent patientId is rejected inside the log_eligibility_check RPC (RLS-scoped existence guard, migration 0008); no pre-check needed here.
   await logCheck(supabase, {
     patientId: String(formData.get("patientId")),
     payer: String(formData.get("payer") ?? "").trim() || undefined,

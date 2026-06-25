@@ -3,6 +3,8 @@ import Link from "next/link";
 import { createServerSupabase } from "@/lib/supabase/server";
 import { getStaffContext } from "@/lib/auth/context";
 
+export const dynamic = "force-dynamic";
+
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
   const supabase = await createServerSupabase();
   const ctx = await getStaffContext(supabase);
