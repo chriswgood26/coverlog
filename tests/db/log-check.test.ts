@@ -3,7 +3,9 @@ import { pool, asAdmin, withClaims, resetDb } from "./helpers";
 
 const ORG_A = "11111111-1111-1111-1111-111111111111";
 const USER_A = "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa";
+const ORG_B = "22222222-2222-2222-2222-222222222222";
 let patientId: string;
+let orgBPatientId: string;
 
 beforeAll(async () => {
   await asAdmin(async (q) => {
@@ -13,6 +15,9 @@ beforeAll(async () => {
              values ($1,$2,'Al','a@a.com','admin')`, [ORG_A, USER_A]);
     const p = await q(`insert into public.patients (org_id, name, status) values ($1,'Jane','pending') returning id`, [ORG_A]);
     patientId = p.rows[0].id;
+    await q(`insert into public.organizations (id, name) values ($1,'B')`, [ORG_B]);
+    const pb = await q(`insert into public.patients (org_id, name, status) values ($1,'Bob','pending') returning id`, [ORG_B]);
+    orgBPatientId = pb.rows[0].id;
   });
 });
 
@@ -32,5 +37,21 @@ describe("log_eligibility_check", () => {
     expect(checks[0]).toMatchObject({ status: "verified", payer: "Aetna" });
     expect(patient).toMatchObject({ status: "verified", primary_payer: "Aetna" });
     expect(patient.next_due.toISOString().slice(0, 10)).toBe("2026-09-01");
+    const today = new Date().toISOString().slice(0, 10);
+    expect(patient.last_checked.toISOString().slice(0, 10)).toBe(today);
+  });
+
+  it("rejects a cross-org patient_id and writes no orphan check row", async () => {
+    await expect(
+      withClaims(USER_A, async (q) => {
+        await q(`select public.log_eligibility_check($1,'Cigna','verified',10,100,'x',$2)`,
+          [orgBPatientId, "2026-12-01"]);
+      }),
+    ).rejects.toThrow(/not found/i);
+
+    const orphans = await asAdmin(async (q) =>
+      (await q(`select id from public.eligibility_checks where patient_id=$1`, [orgBPatientId])).rows,
+    );
+    expect(orphans).toHaveLength(0);
   });
 });

@@ -19,6 +19,18 @@ begin
   select id into v_staff from public.staff
     where user_id = auth.uid() and deleted_at is null limit 1;
 
+  -- RLS-scoped existence guard: SECURITY INVOKER means this exists() only sees the
+  -- patient if it belongs to the caller's org. Blocks a cross-org / nonexistent
+  -- p_patient_id from writing an orphan check row (the patient UPDATE is already a
+  -- no-op under RLS, but the insert would otherwise succeed with org_id = caller's).
+  if not exists (
+    select 1 from public.patients
+    where id = p_patient_id and deleted_at is null
+  ) then
+    raise exception 'patient % not found in caller org', p_patient_id
+      using errcode = 'no_data_found';
+  end if;
+
   insert into public.eligibility_checks
     (org_id, patient_id, checked_by, payer, status, copay, deductible_remaining, notes, check_date, next_due)
   values

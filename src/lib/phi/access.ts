@@ -1,4 +1,5 @@
 export type Patient = { id: string; [k: string]: unknown };
+export type EligibilityCheck = { id: string; [k: string]: unknown };
 export type PhiContext = { orgId: string; staffId: string };
 
 async function logAccess(
@@ -43,12 +44,12 @@ export async function listPatients(
 // Read a patient's eligibility-check history (newest first) AND log the access.
 export async function listCheckHistory(
   client: any, ctx: PhiContext, patientId: string,
-): Promise<Patient[]> {
+): Promise<EligibilityCheck[]> {
   const { data } = await client
     .from("eligibility_checks").select("*")
     .eq("patient_id", patientId).is("deleted_at", null)
     .order("check_date", { ascending: false });
-  const rows: Patient[] = data ?? [];
+  const rows: EligibilityCheck[] = data ?? [];
   await logAccess(client, ctx, { action: "view_check_history", patient_id: patientId });
   return rows;
 }

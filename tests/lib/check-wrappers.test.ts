@@ -30,4 +30,20 @@ describe("listCheckHistory", () => {
     expect(rows).toHaveLength(2);
     expect(inserted[0]).toMatchObject({ action: "view_check_history", patient_id: "p1" });
   });
+
+  it("rejects when the access_log write fails (must log or fail)", async () => {
+    const client: any = {
+      from(table: string) {
+        return {
+          select() { return this; }, eq() { return this; }, is() { return this; },
+          order() { return this; },
+          then(r: any) { r({ data: [{ id: "c1" }], error: null }); },
+          insert() { return { async then(r: any){ r({ error: { message: "boom" } }); } }; },
+        };
+      },
+    };
+    await expect(
+      listCheckHistory(client, { orgId: "o1", staffId: "s1" }, "p1"),
+    ).rejects.toThrow(/boom/);
+  });
 });
