@@ -10,13 +10,14 @@ const SERVICE = process.env.SUPABASE_SERVICE_ROLE_KEY!;
 const admin = createClient(URL, SERVICE, { auth: { autoRefreshToken: false, persistSession: false } });
 
 let masterId: string;
+let userId: string;
 let userClient: ReturnType<typeof createClient>;
 
 beforeAll(async () => {
   const { data: created } = await admin.auth.admin.createUser({
     email: "payer-resolve-it@example.com", password: "Test-Passw0rd!", email_confirm: true,
   });
-  const userId = created!.user!.id;
+  userId = created!.user!.id;
   await asAdmin(async (q) => {
     await q(`truncate table public.payer_code_coverage, public.payer_directory,
              public.payer_master, public.staff, public.organizations restart identity cascade`);
@@ -36,7 +37,7 @@ beforeAll(async () => {
 });
 
 afterAll(async () => {
-  await admin.auth.admin.deleteUser((await admin.auth.admin.listUsers()).data.users.find(u => u.email === "payer-resolve-it@example.com")!.id);
+  await admin.auth.admin.deleteUser(userId);
   await asAdmin((q) => q(`truncate table public.payer_master restart identity cascade`));
   await resetDb();
   await pool.end();
