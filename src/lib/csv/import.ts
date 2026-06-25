@@ -15,6 +15,7 @@ function parseCsv(text: string): string[][] {
     if (inQuotes) {
       if (c === '"' && text[i + 1] === '"') { field += '"'; i++; }
       else if (c === '"') inQuotes = false;
+      // Any other char (including embedded \n and \r) is part of the field.
       else field += c;
     } else if (c === '"') inQuotes = true;
     else if (c === ",") { row.push(field); field = ""; }

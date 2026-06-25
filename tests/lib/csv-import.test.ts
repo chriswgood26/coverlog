@@ -25,4 +25,13 @@ describe("parsePatientsCsv", () => {
     expect(parsePatientsCsv("Name,Payer\n", "org-1")).toEqual({ rows: [], skipped: 0 });
     expect(parsePatientsCsv("", "org-1")).toEqual({ rows: [], skipped: 0 });
   });
+
+  it("preserves newlines and commas inside quoted fields without splitting the record", () => {
+    const csv = 'Name,Member ID,Payer\n"Doe, Jane","M1\nM1-alt",Aetna\n';
+    const { rows, skipped } = parsePatientsCsv(csv, "org-1");
+    expect(skipped).toBe(0);
+    expect(rows).toEqual([
+      { org_id: "org-1", name: "Doe, Jane", member_id: "M1\nM1-alt", primary_payer: "Aetna", status: "pending" },
+    ]);
+  });
 });
