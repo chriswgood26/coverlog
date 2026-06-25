@@ -1,6 +1,5 @@
 import { describe, it, expect, beforeAll, afterAll } from "vitest";
 import { pool, asAdmin, withClaims, resetDb } from "./helpers";
-import { createClient } from "@supabase/supabase-js";
 import { addPatient } from "@/lib/patients/mutations";
 
 const ORG_A = "11111111-1111-1111-1111-111111111111";
