@@ -4,7 +4,7 @@
 
 **Goal:** Stand up the Coverlog app skeleton with a fully multi-tenant Supabase database whose isolation is enforced by Postgres RLS, Supabase Auth, org/staff onboarding, and a centralized PHI data-access layer that logs every read.
 
-**Architecture:** Next.js 16 (App Router) on the customary stack, talking to Supabase Postgres. Every tenant table carries `org_id` and has RLS enabled; policies resolve the caller's org through a `SECURITY DEFINER` helper `auth.user_org_id()` that reads the `staff` table by `auth.uid()`. All patient-PHI reads flow through one server-side module that writes an `access_log` row, with `pgaudit` as a database-level backstop. This plan is plan 1 of 4 (foundation → core tracking → Module 8 → email).
+**Architecture:** Next.js 16 (App Router) on the customary stack, talking to Supabase Postgres. Every tenant table carries `org_id` and has RLS enabled; policies resolve the caller's org through a `SECURITY DEFINER` helper `public.user_org_id()` that reads the `staff` table by `auth.uid()`. All patient-PHI reads flow through one server-side module that writes an `access_log` row, with `pgaudit` as a database-level backstop. This plan is plan 1 of 4 (foundation → core tracking → Module 8 → email).
 
 **Tech Stack:** Next.js 16, TypeScript (strict), Tailwind 4, Supabase (Postgres + Auth), `@supabase/ssr`, Vitest, `pg` (node-postgres, for DB/RLS integration tests), Supabase CLI (local dev DB).
 
@@ -25,7 +25,7 @@
 
 - `package.json`, `tsconfig.json`, `next.config.ts`, `vitest.config.ts`, `.env.local.example` — project config.
 - `supabase/config.toml` — Supabase CLI local project config.
-- `supabase/migrations/0001_core_tenancy.sql` — organizations, staff, `auth.user_org_id()`, RLS.
+- `supabase/migrations/0001_core_tenancy.sql` — organizations, staff, `public.user_org_id()`, RLS.
 - `supabase/migrations/0002_patients_checks.sql` — patients, eligibility_checks, payer_directory, RLS.
 - `supabase/migrations/0003_module8.sql` — providers, payer_enrollments, payer_code_coverage, payer_claim_rules, RLS.
 - `supabase/migrations/0004_part2_logging.sql` — patient_consents, disclosure_log, access_log, RLS.
@@ -133,7 +133,7 @@ git add -A && git commit -m "chore: scaffold Next.js app, Supabase local, Vitest
 
 ---
 
-## Task 2: Core tenancy migration — organizations, staff, `auth.user_org_id()`, RLS
+## Task 2: Core tenancy migration — organizations, staff, `public.user_org_id()`, RLS
 
 **Files:**
 - Create: `supabase/migrations/0001_core_tenancy.sql`
@@ -141,7 +141,7 @@ git add -A && git commit -m "chore: scaffold Next.js app, Supabase local, Vitest
 - Test: `tests/db/tenancy.test.ts`
 
 **Interfaces:**
-- Produces (DB): tables `public.organizations(id, name, created_at)`, `public.staff(id, org_id, user_id, name, email, role, created_at, deleted_at)`; function `auth.user_org_id() returns uuid`.
+- Produces (DB): tables `public.organizations(id, name, created_at)`, `public.staff(id, org_id, user_id, name, email, role, created_at, deleted_at)`; function `public.user_org_id() returns uuid`.
 - Produces (test helper): `withClaims(userId: string | null, fn)` runs SQL as the `authenticated` role with `request.jwt.claims` set so `auth.uid()` resolves; `pool` is a shared `pg.Pool`; `resetDb()` truncates app tables.
 
 - [ ] **Step 1: Write the migration**
@@ -169,7 +169,7 @@ create index staff_user_id_idx on public.staff(user_id) where deleted_at is null
 
 -- Resolve the current user's org. SECURITY DEFINER so the lookup itself isn't
 -- blocked by RLS on staff. STABLE so the planner can cache within a statement.
-create or replace function auth.user_org_id()
+create or replace function public.user_org_id()
 returns uuid
 language sql
 stable
@@ -185,11 +185,11 @@ alter table public.organizations enable row level security;
 alter table public.staff enable row level security;
 
 create policy org_isolation_select on public.organizations
-  for select using (id = auth.user_org_id());
+  for select using (id = public.user_org_id());
 
 create policy staff_isolation_all on public.staff
-  for all using (org_id = auth.user_org_id())
-  with check (org_id = auth.user_org_id());
+  for all using (org_id = public.user_org_id())
+  with check (org_id = public.user_org_id());
 ```
 
 - [ ] **Step 2: Apply the migration**
@@ -301,7 +301,7 @@ describe("tenant isolation", () => {
 - [ ] **Step 5: Run the test to verify it passes**
 
 Run: `npm test -- tests/db/tenancy.test.ts`
-Expected: 3 passing tests. (The migration in Step 1 already implements the behavior; if any test fails, the RLS policy or `auth.user_org_id()` is wrong — fix the migration and re-run `npx supabase db reset`.)
+Expected: 3 passing tests. (The migration in Step 1 already implements the behavior; if any test fails, the RLS policy or `public.user_org_id()` is wrong — fix the migration and re-run `npx supabase db reset`.)
 
 - [ ] **Step 6: Commit**
 
@@ -374,11 +374,11 @@ alter table public.eligibility_checks enable row level security;
 alter table public.payer_directory enable row level security;
 
 create policy patients_isolation_all on public.patients
-  for all using (org_id = auth.user_org_id()) with check (org_id = auth.user_org_id());
+  for all using (org_id = public.user_org_id()) with check (org_id = public.user_org_id());
 create policy checks_isolation_all on public.eligibility_checks
-  for all using (org_id = auth.user_org_id()) with check (org_id = auth.user_org_id());
+  for all using (org_id = public.user_org_id()) with check (org_id = public.user_org_id());
 create policy payerdir_isolation_all on public.payer_directory
-  for all using (org_id = auth.user_org_id()) with check (org_id = auth.user_org_id());
+  for all using (org_id = public.user_org_id()) with check (org_id = public.user_org_id());
 ```
 
 - [ ] **Step 2: Apply the migration**
@@ -528,28 +528,28 @@ alter table public.payer_code_coverage enable row level security;
 alter table public.payer_claim_rules enable row level security;
 
 create policy providers_isolation_all on public.providers
-  for all using (org_id = auth.user_org_id()) with check (org_id = auth.user_org_id());
+  for all using (org_id = public.user_org_id()) with check (org_id = public.user_org_id());
 create policy enrollments_isolation_all on public.payer_enrollments
-  for all using (org_id = auth.user_org_id()) with check (org_id = auth.user_org_id());
+  for all using (org_id = public.user_org_id()) with check (org_id = public.user_org_id());
 
 -- Hybrid: read baseline (org_id is null) OR your own; write your own only.
 create policy coverage_read on public.payer_code_coverage
-  for select using (org_id is null or org_id = auth.user_org_id());
+  for select using (org_id is null or org_id = public.user_org_id());
 create policy coverage_write on public.payer_code_coverage
-  for insert with check (org_id = auth.user_org_id());
+  for insert with check (org_id = public.user_org_id());
 create policy coverage_update on public.payer_code_coverage
-  for update using (org_id = auth.user_org_id()) with check (org_id = auth.user_org_id());
+  for update using (org_id = public.user_org_id()) with check (org_id = public.user_org_id());
 create policy coverage_delete on public.payer_code_coverage
-  for delete using (org_id = auth.user_org_id());
+  for delete using (org_id = public.user_org_id());
 
 create policy rules_read on public.payer_claim_rules
-  for select using (org_id is null or org_id = auth.user_org_id());
+  for select using (org_id is null or org_id = public.user_org_id());
 create policy rules_write on public.payer_claim_rules
-  for insert with check (org_id = auth.user_org_id());
+  for insert with check (org_id = public.user_org_id());
 create policy rules_update on public.payer_claim_rules
-  for update using (org_id = auth.user_org_id()) with check (org_id = auth.user_org_id());
+  for update using (org_id = public.user_org_id()) with check (org_id = public.user_org_id());
 create policy rules_delete on public.payer_claim_rules
-  for delete using (org_id = auth.user_org_id());
+  for delete using (org_id = public.user_org_id());
 ```
 
 - [ ] **Step 2: Apply the migration**
@@ -692,18 +692,18 @@ alter table public.disclosure_log enable row level security;
 alter table public.access_log enable row level security;
 
 create policy consents_isolation_all on public.patient_consents
-  for all using (org_id = auth.user_org_id()) with check (org_id = auth.user_org_id());
+  for all using (org_id = public.user_org_id()) with check (org_id = public.user_org_id());
 
 -- Append-only: insert + select within the org, no update/delete policy granted.
 create policy disclosure_insert on public.disclosure_log
-  for insert with check (org_id = auth.user_org_id());
+  for insert with check (org_id = public.user_org_id());
 create policy disclosure_select on public.disclosure_log
-  for select using (org_id = auth.user_org_id());
+  for select using (org_id = public.user_org_id());
 
 create policy access_insert on public.access_log
-  for insert with check (org_id = auth.user_org_id());
+  for insert with check (org_id = public.user_org_id());
 create policy access_select on public.access_log
-  for select using (org_id = auth.user_org_id());
+  for select using (org_id = public.user_org_id());
 ```
 
 - [ ] **Step 2: Apply the migration**
@@ -1081,7 +1081,7 @@ git add -A && git commit -m "feat: centralized PHI access layer with mandatory a
 
 **Interfaces:**
 - Consumes: `auth.users` (a signed-up Supabase Auth user with no `staff` row yet).
-- Produces: `createOrgWithFirstAdmin(adminClient, { userId, email, orgName, adminName })` — atomically inserts an `organizations` row and a `staff` row (`role='admin'`, linked `user_id`) so the user resolves through `auth.user_org_id()`. Runs via a transaction; returns `{ orgId, staffId }`.
+- Produces: `createOrgWithFirstAdmin(adminClient, { userId, email, orgName, adminName })` — atomically inserts an `organizations` row and a `staff` row (`role='admin'`, linked `user_id`) so the user resolves through `public.user_org_id()`. Runs via a transaction; returns `{ orgId, staffId }`.
 
 - [ ] **Step 1: Write the failing test**
 
@@ -1102,7 +1102,7 @@ afterAll(async () => {
 });
 
 describe("onboarding", () => {
-  it("creates an org + admin staff that resolves via auth.user_org_id()", async () => {
+  it("creates an org + admin staff that resolves via public.user_org_id()", async () => {
     const { orgId } = await createOrgWithFirstAdmin(pool, {
       userId: USER_NEW, email: "new@clinic.com", orgName: "New Clinic", adminName: "Dana",
     });
@@ -1224,9 +1224,9 @@ git add -A && git commit -m "feat: org + first-admin onboarding flow"
 
 ## Self-Review Notes (addressed)
 
-- **Spec coverage:** §4 stack (Task 1, 7), §6 RLS + `auth.user_org_id()` (Tasks 2–5), §7.1 core tables (Tasks 2–3), §7.2 Module 8 hybrid (Task 4), §7.3 consent/disclosure/access_log + full read-logging + pgaudit (Tasks 5, 6, 8), §7.4 service-role confinement (noted; curation surface deferred to Plan 3), §7.5 atomic log-a-check (deferred to Plan 2 — core tracking), §9 onboarding (Task 9). Email (§8), dashboard/CSV (§9 core), and Payer Profile (§9 Module 8) are explicitly scoped to Plans 2–4.
+- **Spec coverage:** §4 stack (Task 1, 7), §6 RLS + `public.user_org_id()` (Tasks 2–5), §7.1 core tables (Tasks 2–3), §7.2 Module 8 hybrid (Task 4), §7.3 consent/disclosure/access_log + full read-logging + pgaudit (Tasks 5, 6, 8), §7.4 service-role confinement (noted; curation surface deferred to Plan 3), §7.5 atomic log-a-check (deferred to Plan 2 — core tracking), §9 onboarding (Task 9). Email (§8), dashboard/CSV (§9 core), and Payer Profile (§9 Module 8) are explicitly scoped to Plans 2–4.
 - **Out of this plan (by design):** patient/check CRUD UI, dashboard, CSV, Payer Profile UI, curation surface, SES email — they belong to Plans 2–4 and depend on this foundation.
-- **Type consistency:** `auth.user_org_id()`, `createServerSupabase()`, `readPatient/listPatients`, `PhiContext`, `createOrgWithFirstAdmin` names are used identically wherever referenced.
+- **Type consistency:** `public.user_org_id()`, `createServerSupabase()`, `readPatient/listPatients`, `PhiContext`, `createOrgWithFirstAdmin` names are used identically wherever referenced.
 
 ---
 
