@@ -6,7 +6,7 @@ async function logAccess(
   ctx: PhiContext,
   entry: { action: string; patient_id?: string | null; patient_ids?: string[]; query_context?: string },
 ) {
-  await client.from("access_log").insert({
+  const { error } = await client.from("access_log").insert({
     org_id: ctx.orgId,
     actor_staff_id: ctx.staffId,
     action: entry.action,
@@ -14,6 +14,7 @@ async function logAccess(
     patient_ids: entry.patient_ids ?? null,
     query_context: entry.query_context ?? null,
   });
+  if (error) throw new Error(`PHI access log write failed: ${error.message}`);
 }
 
 export async function readPatient(
