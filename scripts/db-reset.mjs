@@ -38,7 +38,11 @@ try {
   await client.query(`
     grant usage on schema public to postgres, anon, authenticated, service_role;
     grant create on schema public to postgres;
-    alter default privileges in schema public grant all on tables to postgres, anon, authenticated, service_role;
+    -- Tables: only postgres + service_role get broad default grants.
+    -- anon and authenticated do NOT get default table grants; individual
+    -- migrations and 0006_audit_lockdown.sql grant precisely what each
+    -- role needs, preventing C2-style broad privilege grants on new tables.
+    alter default privileges in schema public grant all on tables to postgres, service_role;
     alter default privileges in schema public grant all on functions to postgres, anon, authenticated, service_role;
     alter default privileges in schema public grant all on sequences to postgres, anon, authenticated, service_role;
   `);

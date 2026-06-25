@@ -34,8 +34,21 @@ describe("tenant isolation", () => {
     expect(rows.map((r: any) => r.name)).toEqual(["Org B"]);
   });
 
-  it("unauthenticated request sees nothing", async () => {
-    const rows = await withClaims(null, async (q) => (await q(`select * from public.staff`)).rows);
-    expect(rows).toEqual([]);
+  it("unauthenticated request sees nothing (empty rows or permission denied)", async () => {
+    // After 0006_audit_lockdown.sql, anon has NO grants on tenant tables.
+    // The result is a "permission denied" error rather than an empty row set.
+    // Both outcomes satisfy the security requirement: anon sees zero data.
+    // We accept either: a rejected promise (permission denied) or an empty array.
+    let rows: any[] = [];
+    let threw = false;
+    try {
+      rows = await withClaims(null, async (q) => (await q(`select * from public.staff`)).rows);
+    } catch (e: any) {
+      threw = true;
+      expect(e.message).toMatch(/permission denied|insufficient_privilege/i);
+    }
+    if (!threw) {
+      expect(rows).toEqual([]);
+    }
   });
 });
