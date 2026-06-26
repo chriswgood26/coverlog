@@ -32,16 +32,15 @@ export async function grantConsent(
 export async function revokeConsent(
   client: Pick<SupabaseClient, "from">, ctx: StaffContext, consentId: string,
 ): Promise<void> {
-  const { data: row, error: fErr } = await client.from("patient_consents")
-    .select("patient_id").eq("id", consentId).maybeSingle();
-  if (fErr) throw new Error(`revokeConsent failed: ${fErr.message}`);
-  const { error } = await client.from("patient_consents")
+  const { data, error } = await client.from("patient_consents")
     .update({ revoked_at: new Date().toISOString() })
-    .eq("id", consentId).eq("org_id", ctx.orgId);
+    .eq("id", consentId).eq("org_id", ctx.orgId)
+    .select("patient_id").maybeSingle();
   if (error) throw new Error(`revokeConsent failed: ${error.message}`);
+  if (!data) return; // no matching consent (unknown/foreign id) → no phantom audit row
   await logDisclosure(client, ctx, {
     action: "consent_revoked",
-    patient_id: (row as { patient_id: string } | null)?.patient_id ?? null,
+    patient_id: (data as { patient_id: string }).patient_id,
     detail: { consent_id: consentId },
   });
 }

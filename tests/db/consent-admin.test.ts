@@ -57,6 +57,15 @@ describe("consent admin", () => {
       (await q(`select action from public.disclosure_log where patient_id=$1`, [patientId])).rows);
     expect(log.some((r: any) => r.action === "consent_revoked")).toBe(true);
   });
+
+  it("revokeConsent on an unknown id writes no disclosure row", async () => {
+    const before = await asAdmin(async (q) =>
+      (await q(`select count(*)::int as n from public.disclosure_log where action='consent_revoked'`)).rows[0].n);
+    await revokeConsent(userClient, ctx, "00000000-0000-0000-0000-000000000000");
+    const after = await asAdmin(async (q) =>
+      (await q(`select count(*)::int as n from public.disclosure_log where action='consent_revoked'`)).rows[0].n);
+    expect(after).toBe(before); // no phantom consent_revoked row
+  });
 });
 
 describe("listOrgConsents (logged)", () => {

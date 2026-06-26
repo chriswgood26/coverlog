@@ -63,9 +63,10 @@ export type OrgConsentRow = {
 export async function listOrgConsents(
   client: any, ctx: PhiContext,
 ): Promise<OrgConsentRow[]> {
-  const { data } = await client.from("patient_consents")
+  const { data, error } = await client.from("patient_consents")
     .select("id, patient_id, consent_type, granted_at, expires_at, revoked_at, patients!inner(name)")
     .order("created_at", { ascending: false });
+  if (error) throw new Error(`listOrgConsents failed: ${error.message}`);
   const rows = (data ?? []) as any[];
   await logAccess(client, ctx, {
     action: "list_view",
