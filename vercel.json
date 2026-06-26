@@ -1,0 +1,6 @@
+{
+  "crons": [
+    { "path": "/api/cron/weekly-digest", "schedule": "0 13 * * 1" },
+    { "path": "/api/cron/ensure-partitions", "schedule": "0 4 1 * *" }
+  ]
+}
