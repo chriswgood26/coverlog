@@ -1,4 +1,5 @@
 import { redirect } from "next/navigation";
+import Link from "next/link";
 import { createServerSupabase } from "@/lib/supabase/server";
 import { getPlatformContext } from "@/lib/auth/platform";
 import { PageHeader } from "@/components/ui/PageHeader";
@@ -6,8 +7,8 @@ import { Card } from "@/components/ui/Card";
 
 export const dynamic = "force-dynamic";
 
-const TOOLS = [
-  { name: "Organizations", desc: "Enable or disable tenant organizations." },
+const TOOLS: { name: string; desc: string; href?: string }[] = [
+  { name: "Organizations", desc: "Enable or disable tenant organizations.", href: "/internal/orgs" },
   { name: "Payer Curation", desc: "Curate the master payer list and baseline coverage / claim rules." },
 ];
 
@@ -29,7 +30,11 @@ export default async function InternalHome() {
                 <div className="text-sm font-medium text-slate-900">{t.name}</div>
                 <div className="text-sm text-slate-500">{t.desc}</div>
               </div>
-              <span className="text-xs font-medium text-slate-400 bg-slate-100 rounded-full px-2.5 py-1">Coming soon</span>
+              {t.href ? (
+                <Link href={t.href} className="text-teal-600 hover:text-teal-700 text-sm font-medium">Open</Link>
+              ) : (
+                <span className="text-xs font-medium text-slate-400 bg-slate-100 rounded-full px-2.5 py-1">Coming soon</span>
+              )}
             </li>
           ))}
         </ul>
