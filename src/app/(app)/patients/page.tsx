@@ -18,7 +18,7 @@ export default async function PatientsPage() {
   const patients = await listPatients(supabase, ctx, {});
   return (
     <div className="space-y-4">
-      <PageHeader title="Patients" subtitle={`${patients.length} total`}>
+      <PageHeader title="Insurance Eligibility" subtitle={`${patients.length} total`}>
         <CsvControls />
       </PageHeader>
       <AddPatientForm />

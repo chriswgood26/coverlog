@@ -16,7 +16,7 @@ export default async function PayersPage() {
     .order("payer_name");
   return (
     <div className="space-y-4">
-      <PageHeader title="Payers" subtitle={`${(payers ?? []).length} total`} />
+      <PageHeader title="Insurance Credentialing" subtitle={`${(payers ?? []).length} total`} />
       <div className={tableWrap}>
         <table className="w-full">
           <thead><tr className={theadRow}><th className={thCell}>Payer</th><th className={thCell}>Portal</th><th className={thCell}>Linked</th></tr></thead>

@@ -5,9 +5,9 @@ import { signOutAction } from "../actions";
 
 const NAV = [
   { href: "/dashboard", label: "Dashboard" },
-  { href: "/patients", label: "Patients" },
-  { href: "/payers", label: "Payers" },
   { href: "/providers", label: "Providers" },
+  { href: "/payers", label: "Insurance Credentialing" },
+  { href: "/patients", label: "Insurance Eligibility" },
 ];
 
 export function Sidebar({ isAdmin }: { isAdmin: boolean }) {

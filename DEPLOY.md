@@ -56,7 +56,7 @@ Supabase → Authentication → Providers → Email: turn **"Confirm email" OFF*
 1. Open the deployed URL — `/` redirects into the app (→ `/dashboard` → `/sign-in` when signed out).
 2. **Sign up** (email + password).
 3. **Onboarding** — enter a clinic name + your name → creates your org and makes you admin.
-4. You're in at `/dashboard`. Nav: Dashboard · Patients · Payers · Providers · Admin (admin-only) · Sign out.
+4. You're in at `/dashboard`. Nav: Dashboard · Providers · Insurance Credentialing · Insurance Eligibility · Admin (admin-only) · Sign out.
 5. Create synthetic demo data: add a patient, log an eligibility check, add a provider + license, link a payer, grant a consent. The dashboard stat cards and `/admin` consents overview update accordingly.
 
 ## Step 6 — Cron jobs (optional for a demo)
