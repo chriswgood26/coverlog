@@ -53,3 +53,28 @@ export async function listCheckHistory(
   await logAccess(client, ctx, { action: "view_check_history", patient_id: patientId });
   return rows;
 }
+
+export type OrgConsentRow = {
+  id: string; patient_id: string; patient_name: string; consent_type: string;
+  granted_at: string | null; expires_at: string | null; revoked_at: string | null;
+};
+
+// Org-wide consents overview joined to patient names (PHI) — therefore logged.
+export async function listOrgConsents(
+  client: any, ctx: PhiContext,
+): Promise<OrgConsentRow[]> {
+  const { data } = await client.from("patient_consents")
+    .select("id, patient_id, consent_type, granted_at, expires_at, revoked_at, patients!inner(name)")
+    .order("created_at", { ascending: false });
+  const rows = (data ?? []) as any[];
+  await logAccess(client, ctx, {
+    action: "list_view",
+    patient_ids: rows.map((r) => r.patient_id),
+    query_context: "admin_consents_overview",
+  });
+  return rows.map((r) => ({
+    id: r.id, patient_id: r.patient_id, patient_name: r.patients?.name ?? "",
+    consent_type: r.consent_type, granted_at: r.granted_at,
+    expires_at: r.expires_at, revoked_at: r.revoked_at,
+  }));
+}

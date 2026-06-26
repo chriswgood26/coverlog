@@ -2,6 +2,7 @@ import { describe, it, expect, beforeAll, afterAll } from "vitest";
 import { createClient } from "@supabase/supabase-js";
 import { pool, asAdmin, resetDb } from "./helpers";
 import { grantConsent, revokeConsent, listConsentsForPatient, hasValidConsent } from "@/lib/phi/consent";
+import { listOrgConsents } from "@/lib/phi/access";
 
 const ORG = "11111111-1111-1111-1111-111111111111";
 const URL = process.env.NEXT_PUBLIC_SUPABASE_URL!;
@@ -55,5 +56,18 @@ describe("consent admin", () => {
     const log = await asAdmin(async (q) =>
       (await q(`select action from public.disclosure_log where patient_id=$1`, [patientId])).rows);
     expect(log.some((r: any) => r.action === "consent_revoked")).toBe(true);
+  });
+});
+
+describe("listOrgConsents (logged)", () => {
+  it("returns consents joined to patient name and logs a list_view access", async () => {
+    // A fresh grant so there is at least one consent for the org.
+    await grantConsent(userClient, ctx, { patientId, consentType: "part2_disclosure" });
+    const rows = await listOrgConsents(userClient, ctx);
+    expect(rows.length).toBeGreaterThan(0);
+    expect(rows[0].patient_name).toBe("Pat");
+    const access = await asAdmin(async (q) =>
+      (await q(`select action from public.access_log where org_id=$1 and action='list_view'`, [ORG])).rows);
+    expect(access.length).toBeGreaterThan(0);
   });
 });
