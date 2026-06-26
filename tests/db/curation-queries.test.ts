@@ -20,6 +20,8 @@ beforeAll(async () => {
   await upsertBaselineClaimRule(svc, { payerMasterId: aetnaId, ruleCategory: "timely_filing", requiredValue: "90 days" });
   // org-scoped OVERRIDE for the same payer+CPT — must be excluded from baseline lists
   await asAdmin((q) => q(`insert into public.payer_code_coverage (org_id, payer_master_id, cpt_code, source) values ($1,$2,'90834','org')`, [ORG, aetnaId]));
+  // org-scoped claim-rule override for the same payer+category — must be excluded from baseline claim-rule list
+  await asAdmin((q) => q(`insert into public.payer_claim_rules (org_id, payer_master_id, rule_category, source) values ($1,$2,'timely_filing','org')`, [ORG, aetnaId]));
 });
 
 afterAll(async () => {
@@ -43,8 +45,9 @@ describe("curation queries (service role)", () => {
   });
 
   it("listBaselineClaimRules returns the baseline rules", async () => {
+    // table has a baseline + an org override for timely_filing; baseline list must exclude the org one
     const rules = await listBaselineClaimRules(svc, aetnaId);
-    expect(rules).toHaveLength(1);
+    expect(rules).toHaveLength(1); // proves exclusion: 2 timely_filing rows exist but only 1 baseline returned
     expect(rules[0]).toMatchObject({ rule_category: "timely_filing", required_value: "90 days" });
   });
 });

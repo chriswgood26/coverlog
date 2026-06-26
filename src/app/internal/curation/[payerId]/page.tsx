@@ -60,7 +60,8 @@ export default async function CurationDetailPage({ params }: { params: Promise<{
           <div className="w-28"><label className={labelClass}>Modifier</label><input name="modifierRequired" className={inputClass} placeholder="95" /></div>
           <div className="w-28"><label className={labelClass}>Unit limit</label><input name="unitLimit" className={inputClass} /></div>
           <div className="flex-1 min-w-[160px]"><label className={labelClass}>Notes</label><input name="notes" className={inputClass} /></div>
-          <button className={btnPrimary}>Save coverage</button>
+          <button type="submit" className={btnPrimary}>Save coverage</button>
+          <p className="w-full text-xs text-slate-400">Re-submitting an existing key replaces that baseline row.</p>
         </form>
       </Card>
 
@@ -92,7 +93,8 @@ export default async function CurationDetailPage({ params }: { params: Promise<{
           <div className="w-40"><label className={labelClass}>Required value</label><input name="requiredValue" className={inputClass} /></div>
           <div className="flex-1 min-w-[160px]"><label className={labelClass}>Description</label><input name="ruleDescription" className={inputClass} /></div>
           <div className="flex-1 min-w-[120px]"><label className={labelClass}>Notes</label><input name="notes" className={inputClass} /></div>
-          <button className={btnPrimary}>Save rule</button>
+          <button type="submit" className={btnPrimary}>Save rule</button>
+          <p className="w-full text-xs text-slate-400">Re-submitting an existing key replaces that baseline row.</p>
         </form>
       </Card>
     </div>

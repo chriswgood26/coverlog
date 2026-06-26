@@ -29,7 +29,7 @@ export default async function CurationPage() {
             <label className={labelClass}>Type</label>
             <input name="payerType" className={inputClass} placeholder="commercial / medicaid …" />
           </div>
-          <button className={btnPrimary}>Add payer</button>
+          <button type="submit" className={btnPrimary}>Add payer</button>
         </form>
       </Card>
       {payers.length === 0 ? (
