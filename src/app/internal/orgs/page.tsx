@@ -34,7 +34,7 @@ export default async function InternalOrgsPage() {
                     <input type="hidden" name="status" value={o.status === "active" ? "disabled" : "active"} />
                     {o.status === "active"
                       ? <DisableButton />
-                      : <button className="text-teal-600 hover:text-teal-700 text-sm font-medium">Enable</button>}
+                      : <button type="submit" className="text-teal-600 hover:text-teal-700 text-sm font-medium">Enable</button>}
                   </form>
                 </td>
               </tr>

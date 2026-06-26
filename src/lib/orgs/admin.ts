@@ -18,6 +18,8 @@ export async function listAllOrgs(svc: Pick<SupabaseClient, "from">): Promise<Or
 export async function setOrgStatus(
   svc: Pick<SupabaseClient, "from">, orgId: string, status: OrgStatus,
 ): Promise<void> {
-  const { error } = await svc.from("organizations").update({ status }).eq("id", orgId);
+  const { error, count } = await svc.from("organizations")
+    .update({ status }, { count: "exact" }).eq("id", orgId);
   if (error) throw new Error(`setOrgStatus failed: ${error.message}`);
+  if (!count) throw new Error(`setOrgStatus failed: org ${orgId} not found`);
 }

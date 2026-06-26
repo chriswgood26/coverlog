@@ -7,6 +7,7 @@ const COLORS: Record<string, string> = {
   out_of_network: "bg-amber-100 text-amber-700",
   expiring: "bg-amber-100 text-amber-700",
   expired: "bg-amber-100 text-amber-700",
+  disabled: "bg-amber-100 text-amber-700",
   inactive: "bg-slate-100 text-slate-500",
   terminated: "bg-slate-100 text-slate-500",
   not_enrolled: "bg-slate-100 text-slate-500",
