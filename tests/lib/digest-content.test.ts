@@ -28,4 +28,9 @@ describe("buildOrgDigest", () => {
     // Built solely from orgName + integer counts + url, so no PHI tokens can appear.
     expect(out.text.toLowerCase()).not.toMatch(/member id|date of birth|\bdob\b|ssn/);
   });
+  it("HTML-escapes the org name in the html body", () => {
+    const o = buildOrgDigest("Smith & Co <Clinic>", { licensesExpiring: 1, revalidationsDue: 0, consentsExpiring: 0, dueThisWeek: 0, needsAttention: 0 }, "https://app.example");
+    expect(o.html).toContain("Smith &amp; Co &lt;Clinic&gt;");
+    expect(o.html).not.toContain("Smith & Co <Clinic>");
+  });
 });

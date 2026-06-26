@@ -2,7 +2,10 @@ import { describe, it, expect, afterEach } from "vitest";
 import { cronAuthorized } from "@/lib/cron/auth";
 
 const orig = process.env.CRON_SECRET;
-afterEach(() => { process.env.CRON_SECRET = orig; });
+afterEach(() => {
+  if (orig === undefined) delete process.env.CRON_SECRET;
+  else process.env.CRON_SECRET = orig;
+});
 
 function req(auth?: string) {
   return new Request("https://x/api/cron/weekly-digest",

@@ -1,7 +1,10 @@
 import { describe, it, expect, afterEach } from "vitest";
 
 const orig = process.env.CRON_SECRET;
-afterEach(() => { process.env.CRON_SECRET = orig; });
+afterEach(() => {
+  if (orig === undefined) delete process.env.CRON_SECRET;
+  else process.env.CRON_SECRET = orig;
+});
 
 describe("cron routes", () => {
   it("weekly-digest GET returns 401 without the cron secret", async () => {

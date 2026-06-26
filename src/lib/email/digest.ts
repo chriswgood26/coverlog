@@ -1,3 +1,7 @@
+function escapeHtml(s: string): string {
+  return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+}
+
 export type AlertCounts = {
   licensesExpiring: number;
   revalidationsDue: number;
@@ -31,7 +35,7 @@ export function buildOrgDigest(
     `Open Coverlog: ${appUrl}`,
   ].join("\n");
   const html = [
-    `<h2>Weekly summary for ${orgName}</h2>`,
+    `<h2>Weekly summary for ${escapeHtml(orgName)}</h2>`,
     "<ul>",
     ...LABELS.map(([k, label]) => `<li>${label}: <strong>${counts[k]}</strong></li>`),
     "</ul>",
