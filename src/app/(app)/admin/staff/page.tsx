@@ -4,6 +4,9 @@ import { createServerSupabase } from "@/lib/supabase/server";
 import { getStaffContext } from "@/lib/auth/context";
 import { listStaff } from "@/lib/staff/queries";
 import { setStaffRoleAction, deactivateStaffAction, reactivateStaffAction } from "../actions";
+import { PageHeader } from "@/components/ui/PageHeader";
+import { Badge } from "@/components/ui/Badge";
+import { tableWrap, theadRow, thCell, tbody, rowHover, linkTeal, btnDangerText } from "@/lib/ui";
 
 export default async function StaffAdminPage() {
   const supabase = await createServerSupabase();
@@ -13,38 +16,42 @@ export default async function StaffAdminPage() {
   const staff = await listStaff(supabase);
   return (
     <div className="space-y-4">
-      <h1 className="text-xl font-semibold">Staff</h1>
-      <table className="w-full text-sm">
-        <thead><tr className="border-b text-left"><th className="p-2">Name</th><th>Email</th><th>Role</th><th>Status</th><th></th></tr></thead>
-        <tbody>
-          {staff.map((s) => (
-            <tr key={s.id} className="border-b">
-              <td className="p-2">{s.name}</td><td>{s.email}</td>
-              <td>
-                <form action={setStaffRoleAction} className="inline">
-                  <input type="hidden" name="staffId" value={s.id} />
-                  <input type="hidden" name="role" value={s.role === "admin" ? "specialist" : "admin"} />
-                  <button className="underline">{s.role} → {s.role === "admin" ? "specialist" : "admin"}</button>
-                </form>
-              </td>
-              <td>{s.deleted_at ? "inactive" : "active"}</td>
-              <td>
-                {s.deleted_at ? (
-                  <form action={reactivateStaffAction}>
+      <PageHeader title="Staff" subtitle={`${staff.length} total`} backHref="/admin" />
+      <div className={tableWrap}>
+        <table className="w-full">
+          <thead><tr className={theadRow}><th className={thCell}>Name</th><th className={thCell}>Email</th><th className={thCell}>Role</th><th className={thCell}>Status</th><th className={thCell}></th></tr></thead>
+          <tbody className={tbody}>
+            {staff.map((s) => (
+              <tr key={s.id} className={rowHover}>
+                <td className="px-4 py-4 text-sm font-medium text-slate-900">{s.name}</td>
+                <td className="px-4 py-4 text-sm text-slate-600">{s.email}</td>
+                <td className="px-4 py-4">
+                  <form action={setStaffRoleAction} className="inline-flex items-center gap-2">
                     <input type="hidden" name="staffId" value={s.id} />
-                    <button className="text-blue-700 underline">Reactivate</button>
+                    <input type="hidden" name="role" value={s.role === "admin" ? "specialist" : "admin"} />
+                    <Badge value={s.role} />
+                    <button className={`${linkTeal} text-xs`}>→ {s.role === "admin" ? "specialist" : "admin"}</button>
                   </form>
-                ) : (
-                  <form action={deactivateStaffAction}>
-                    <input type="hidden" name="staffId" value={s.id} />
-                    <button className="text-red-700 underline">Deactivate</button>
-                  </form>
-                )}
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
+                </td>
+                <td className="px-4 py-4"><Badge value={s.deleted_at ? "inactive" : "active"} /></td>
+                <td className="px-4 py-4">
+                  {s.deleted_at ? (
+                    <form action={reactivateStaffAction}>
+                      <input type="hidden" name="staffId" value={s.id} />
+                      <button className={`${linkTeal} text-xs`}>Reactivate</button>
+                    </form>
+                  ) : (
+                    <form action={deactivateStaffAction}>
+                      <input type="hidden" name="staffId" value={s.id} />
+                      <button className={btnDangerText}>Deactivate</button>
+                    </form>
+                  )}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
     </div>
   );
 }

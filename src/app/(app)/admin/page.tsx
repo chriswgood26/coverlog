@@ -4,6 +4,10 @@ import { redirect } from "next/navigation";
 import { createServerSupabase } from "@/lib/supabase/server";
 import { getStaffContext } from "@/lib/auth/context";
 import { listOrgConsents } from "@/lib/phi/access";
+import { PageHeader } from "@/components/ui/PageHeader";
+import { Card } from "@/components/ui/Card";
+import { Badge } from "@/components/ui/Badge";
+import { theadRow, thCell, tbody, rowHover } from "@/lib/ui";
 
 export default async function AdminPage() {
   const supabase = await createServerSupabase();
@@ -13,23 +17,25 @@ export default async function AdminPage() {
   const consents = await listOrgConsents(supabase, ctx);
   return (
     <div className="space-y-4">
-      <div className="flex gap-4">
-        <h1 className="text-xl font-semibold">Admin</h1>
-        <Link href="/admin/staff" className="underline">Staff</Link>
-      </div>
-      <h2 className="font-medium">Consents</h2>
-      <table className="w-full text-sm">
-        <thead><tr className="border-b text-left"><th className="p-2">Patient</th><th>Type</th><th>Granted</th><th>Expires</th><th>Status</th></tr></thead>
-        <tbody>
-          {consents.map((c) => (
-            <tr key={c.id} className="border-b">
-              <td className="p-2">{c.patient_name}</td><td>{c.consent_type}</td>
-              <td>{c.granted_at?.slice(0, 10) ?? "—"}</td><td>{c.expires_at?.slice(0, 10) ?? "—"}</td>
-              <td>{c.revoked_at ? "revoked" : "active"}</td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
+      <PageHeader title="Admin">
+        <Link href="/admin/staff" className="border border-slate-200 text-slate-600 px-4 py-2.5 rounded-xl font-medium hover:bg-slate-50 transition-colors text-sm">Staff</Link>
+      </PageHeader>
+      <Card title="Consents">
+        <table className="w-full">
+          <thead><tr className={theadRow}><th className={thCell}>Patient</th><th className={thCell}>Type</th><th className={thCell}>Granted</th><th className={thCell}>Expires</th><th className={thCell}>Status</th></tr></thead>
+          <tbody className={tbody}>
+            {consents.map((c) => (
+              <tr key={c.id} className={rowHover}>
+                <td className="px-4 py-4 text-sm font-medium text-slate-900">{c.patient_name}</td>
+                <td className="px-4 py-4 text-sm text-slate-600">{c.consent_type}</td>
+                <td className="px-4 py-4 text-sm text-slate-600">{c.granted_at?.slice(0, 10) ?? "—"}</td>
+                <td className="px-4 py-4 text-sm text-slate-600">{c.expires_at?.slice(0, 10) ?? "—"}</td>
+                <td className="px-4 py-4"><Badge value={c.revoked_at ? "revoked" : "active"} /></td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </Card>
     </div>
   );
 }
