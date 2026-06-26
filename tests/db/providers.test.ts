@@ -2,6 +2,7 @@ import { describe, it, expect, beforeAll, afterAll } from "vitest";
 import { createClient } from "@supabase/supabase-js";
 import { pool, asAdmin, resetDb } from "./helpers";
 import { createProvider, updateProvider, softDeleteProvider, upsertEnrollment } from "@/lib/providers/mutations";
+import { listProviders, listEnrollmentsForPayer } from "@/lib/providers/queries";
 
 const ORG_A = "11111111-1111-1111-1111-111111111111";
 const ORG_B = "22222222-2222-2222-2222-222222222222";
@@ -85,5 +86,21 @@ describe("provider mutations", () => {
     const { id } = await createProvider(clientA, CTX_A, { name: "Dr Secret" });
     const { data } = await clientB.from("providers").select("id").eq("id", id);
     expect(data ?? []).toHaveLength(0);
+  });
+});
+
+describe("provider queries", () => {
+  it("listProviders excludes soft-deleted and lists the org's providers", async () => {
+    const rows = await listProviders(clientA);
+    expect(rows.every((r) => r.deleted_at == null)).toBe(true);
+    expect(rows.some((r) => r.name === "Dr A")).toBe(true);
+    expect(rows.some((r) => r.name === "Dr Edit")).toBe(false); // soft-deleted in Task 2 test
+  });
+
+  it("listEnrollmentsForPayer joins the provider name", async () => {
+    const rows = await listEnrollmentsForPayer(clientA, payerDirA);
+    expect(rows.length).toBeGreaterThan(0);
+    expect(rows[0]).toHaveProperty("provider_name");
+    expect(typeof rows[0].provider_name).toBe("string");
   });
 });
