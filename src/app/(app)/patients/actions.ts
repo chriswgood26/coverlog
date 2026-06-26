@@ -6,6 +6,7 @@ import { getStaffContext } from "@/lib/auth/context";
 import { addPatient, logCheck } from "@/lib/patients/mutations";
 import { parsePatientsCsv } from "@/lib/csv/import";
 import { exportPatientsCsv } from "@/lib/csv/export";
+import { grantConsent, revokeConsent } from "@/lib/phi/consent";
 
 async function ctxOrRedirect() {
   const supabase = await createServerSupabase();
@@ -65,4 +66,22 @@ export async function linkPatientPayerAction(formData: FormData) {
     .eq("id", patientId);
   if (error) throw new Error(`linkPatientPayer failed: ${error.message}`);
   revalidatePath(`/patients/${patientId}`);
+}
+
+export async function grantConsentAction(formData: FormData) {
+  const { supabase, ctx } = await ctxOrRedirect();
+  await grantConsent(supabase, ctx, {
+    patientId: String(formData.get("patientId")),
+    consentType: String(formData.get("consentType") ?? "").trim() || "part2_disclosure",
+    scope: String(formData.get("scope") ?? "").trim() || undefined,
+    expiresAt: String(formData.get("expiresAt") ?? "").trim() || undefined,
+    documentRef: String(formData.get("documentRef") ?? "").trim() || undefined,
+  });
+  revalidatePath(`/patients/${formData.get("patientId")}`);
+}
+
+export async function revokeConsentAction(formData: FormData) {
+  const { supabase, ctx } = await ctxOrRedirect();
+  await revokeConsent(supabase, ctx, String(formData.get("consentId")));
+  revalidatePath(`/patients/${formData.get("patientId")}`);
 }

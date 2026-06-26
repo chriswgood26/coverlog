@@ -8,3 +8,12 @@ describe("admin actions module", () => {
     }
   });
 });
+
+describe("patient consent actions module", () => {
+  it("exports grantConsentAction + revokeConsentAction", async () => {
+    const mod = await import("@/app/(app)/patients/actions");
+    for (const fn of ["grantConsentAction", "revokeConsentAction"]) {
+      expect(typeof (mod as any)[fn]).toBe("function");
+    }
+  });
+});

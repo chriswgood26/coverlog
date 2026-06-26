@@ -1,11 +1,11 @@
 import { createServerSupabase } from "@/lib/supabase/server";
 import { getStaffContext } from "@/lib/auth/context";
 import { readPatient, listCheckHistory } from "@/lib/phi/access";
-import { hasValidConsent } from "@/lib/phi/consent";
+import { hasValidConsent, listConsentsForPatient } from "@/lib/phi/consent";
 import { redirect, notFound } from "next/navigation";
 import { LogCheckDrawer } from "../_components/LogCheckDrawer";
 import { resolveCoverage } from "@/lib/payers/resolve";
-import { linkPatientPayerAction } from "../actions";
+import { linkPatientPayerAction, grantConsentAction, revokeConsentAction } from "../actions";
 
 export const dynamic = "force-dynamic";
 
@@ -16,10 +16,11 @@ export default async function PatientDetailPage({ params }: { params: Promise<{ 
   if (!ctx) redirect("/onboarding");
   const patient = await readPatient(supabase, ctx, id);
   if (!patient) notFound();
-  const [history, consent, orgPayersRes] = await Promise.all([
+  const [history, consent, orgPayersRes, consents] = await Promise.all([
     listCheckHistory(supabase, ctx, id),
     hasValidConsent(supabase, id),
     supabase.from("payer_directory").select("id, payer_name, payer_master_id").order("payer_name"),
+    listConsentsForPatient(supabase, id),
   ]);
   const orgPayers = orgPayersRes.data;
   const payerDirId = (patient as any).primary_payer_directory_id as string | null;
@@ -63,6 +64,39 @@ export default async function PatientDetailPage({ params }: { params: Promise<{ 
             </tbody>
           </table>
         )}
+      </section>
+      <section className="space-y-2">
+        <h2 className="font-medium">Consents</h2>
+        <table className="w-full text-sm">
+          <thead><tr className="border-b text-left"><th className="p-2">Type</th><th>Scope</th><th>Granted</th><th>Expires</th><th>Status</th><th></th></tr></thead>
+          <tbody>
+            {consents.map((c) => {
+              const active = !c.revoked_at && (!c.expires_at || new Date(c.expires_at) > new Date());
+              return (
+                <tr key={c.id} className="border-b">
+                  <td className="p-2">{c.consent_type}</td><td>{c.scope ?? "—"}</td>
+                  <td>{c.granted_at?.slice(0, 10) ?? "—"}</td><td>{c.expires_at?.slice(0, 10) ?? "—"}</td>
+                  <td>{c.revoked_at ? "revoked" : active ? "active" : "expired"}</td>
+                  <td>{!c.revoked_at && (
+                    <form action={revokeConsentAction}>
+                      <input type="hidden" name="consentId" value={c.id} />
+                      <input type="hidden" name="patientId" value={id} />
+                      <button className="text-red-700 underline">Revoke</button>
+                    </form>
+                  )}</td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+        <form action={grantConsentAction} className="flex flex-wrap gap-2">
+          <input type="hidden" name="patientId" value={id} />
+          <input name="consentType" placeholder="Type (part2_disclosure)" className="border p-1" />
+          <input name="scope" placeholder="Scope (e.g. billing)" className="border p-1" />
+          <input name="expiresAt" type="date" className="border p-1" />
+          <input name="documentRef" placeholder="Document ref" className="border p-1" />
+          <button className="rounded bg-black px-2 py-1 text-white text-sm">Grant consent</button>
+        </form>
       </section>
       <table className="w-full text-sm">
         <thead><tr className="border-b text-left"><th className="p-2">Date</th><th>Payer</th><th>Status</th><th>Copay</th></tr></thead>
