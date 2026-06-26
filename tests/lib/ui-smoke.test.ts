@@ -14,6 +14,8 @@ describe("statusColor", () => {
     expect(statusColor("terminated")).toBe("bg-slate-100 text-slate-500");
     expect(statusColor("not_enrolled")).toBe("bg-slate-100 text-slate-500");
     expect(statusColor("revoked")).toBe("bg-slate-100 text-slate-500");
+    expect(statusColor("expiring")).toBe("bg-amber-100 text-amber-700");
+    expect(statusColor("denied")).toBe("bg-red-100 text-red-600");
     expect(statusColor("flagged")).toBe("bg-red-100 text-red-600");
     expect(statusColor("admin")).toBe("bg-purple-100 text-purple-700");
     expect(statusColor("specialist")).toBe("bg-slate-100 text-slate-600");
