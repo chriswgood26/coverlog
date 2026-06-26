@@ -19,6 +19,7 @@ export default async function AdminPage() {
     <div className="space-y-4">
       <PageHeader title="Admin">
         <Link href="/admin/staff" className="border border-slate-200 text-slate-600 px-4 py-2.5 rounded-xl font-medium hover:bg-slate-50 transition-colors text-sm">Staff</Link>
+        <Link href="/admin/audit" className="border border-slate-200 text-slate-600 px-4 py-2.5 rounded-xl font-medium hover:bg-slate-50 transition-colors text-sm">Audit Log</Link>
       </PageHeader>
       <Card title="Consents">
         <table className="w-full">
