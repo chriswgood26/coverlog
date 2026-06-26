@@ -3,7 +3,8 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 export type Provider = {
   id: string; name: string; npi: string | null; license_type: string | null;
   license_number: string | null; license_state: string | null;
-  license_expiration: string | null; deleted_at: string | null;
+  license_expiration: string | null; status: string; specialty: string | null;
+  deleted_at: string | null;
 };
 export type EnrollmentRow = {
   id: string; provider_id: string; payer_id: string; provider_name: string;
@@ -13,11 +14,14 @@ export type EnrollmentRow = {
 };
 
 export async function listProviders(
-  client: Pick<SupabaseClient, "from">,
+  client: Pick<SupabaseClient, "from">, opts: { search?: string } = {},
 ): Promise<Provider[]> {
-  const { data, error } = await client.from("providers")
-    .select("id, name, npi, license_type, license_number, license_state, license_expiration, deleted_at")
-    .is("deleted_at", null).order("name");
+  let query = client.from("providers")
+    .select("id, name, npi, license_type, license_number, license_state, license_expiration, status, specialty, deleted_at")
+    .is("deleted_at", null);
+  const q = (opts.search ?? "").replace(/[,()*%]/g, "").trim();
+  if (q) query = query.or(`name.ilike.%${q}%,npi.ilike.%${q}%,specialty.ilike.%${q}%`);
+  const { data, error } = await query.order("name");
   if (error) throw new Error(`listProviders failed: ${error.message}`);
   return (data ?? []) as Provider[];
 }
@@ -26,7 +30,7 @@ export async function getProvider(
   client: Pick<SupabaseClient, "from">, id: string,
 ): Promise<Provider | null> {
   const { data, error } = await client.from("providers")
-    .select("id, name, npi, license_type, license_number, license_state, license_expiration, deleted_at")
+    .select("id, name, npi, license_type, license_number, license_state, license_expiration, status, specialty, deleted_at")
     .eq("id", id).maybeSingle();
   if (error) throw new Error(`getProvider failed: ${error.message}`);
   return (data ?? null) as Provider | null;

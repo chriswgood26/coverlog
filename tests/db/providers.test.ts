@@ -120,3 +120,41 @@ describe("provider queries", () => {
     expect(typeof rows[0].provider_name).toBe("string");
   });
 });
+
+describe("provider status + specialty + search", () => {
+  it("createProvider defaults status to active; persists status + specialty", async () => {
+    const { id: d } = await createProvider(clientA, CTX_A, { name: "Dr Default" });
+    const { id: f } = await createProvider(clientA, CTX_A, { name: "Dr Flag", status: "flagged", specialty: "Psychiatry" });
+    const rows = await asAdmin(async (q) =>
+      (await q(`select name, status, specialty from public.providers where id = any($1::uuid[]) order by name`, [[d, f]])).rows);
+    expect(rows.find((r: any) => r.name === "Dr Default")).toMatchObject({ status: "active", specialty: null });
+    expect(rows.find((r: any) => r.name === "Dr Flag")).toMatchObject({ status: "flagged", specialty: "Psychiatry" });
+  });
+
+  it("updateProvider flips status", async () => {
+    const { id } = await createProvider(clientA, CTX_A, { name: "Dr Status" });
+    await updateProvider(clientA, CTX_A, id, { status: "pending" });
+    const rows = await asAdmin(async (q) =>
+      (await q(`select status from public.providers where id=$1`, [id])).rows);
+    expect(rows[0].status).toBe("pending");
+  });
+
+  it("listProviders search matches name, NPI, and specialty (case-insensitive)", async () => {
+    await createProvider(clientA, CTX_A, { name: "Marcus Wells", npi: "5559998888", specialty: "Cardiology" });
+    const byName = await listProviders(clientA, { search: "marcus" });
+    expect(byName.some((r) => r.name === "Marcus Wells")).toBe(true);
+    const byNpi = await listProviders(clientA, { search: "5559998888" });
+    expect(byNpi.some((r) => r.name === "Marcus Wells")).toBe(true);
+    const bySpec = await listProviders(clientA, { search: "cardio" });
+    expect(bySpec.some((r) => r.name === "Marcus Wells")).toBe(true);
+    const none = await listProviders(clientA, { search: "zzzznomatch" });
+    expect(none.some((r) => r.name === "Marcus Wells")).toBe(false);
+  });
+
+  it("the Provider type exposes status + specialty", async () => {
+    const rows = await listProviders(clientA);
+    const m = rows.find((r) => r.name === "Marcus Wells")!;
+    expect(m.status).toBe("active");
+    expect(m.specialty).toBe("Cardiology");
+  });
+});

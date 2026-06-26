@@ -4,6 +4,7 @@ import type { StaffContext } from "@/lib/auth/context";
 export type ProviderInput = {
   name?: string; npi?: string; licenseType?: string;
   licenseNumber?: string; licenseState?: string; licenseExpiration?: string;
+  status?: "active" | "pending" | "flagged"; specialty?: string;
 };
 export type EnrollmentInput = {
   providerId: string; payerDirectoryId: string;
@@ -23,6 +24,8 @@ function providerColumns(input: ProviderInput): Record<string, unknown> {
   if (input.licenseNumber !== undefined) out.license_number = input.licenseNumber;
   if (input.licenseState !== undefined) out.license_state = input.licenseState;
   if (input.licenseExpiration !== undefined) out.license_expiration = input.licenseExpiration;
+  if (input.status !== undefined) out.status = input.status;
+  if (input.specialty !== undefined) out.specialty = input.specialty;
   return out;
 }
 
