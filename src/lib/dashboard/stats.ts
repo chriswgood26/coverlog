@@ -19,3 +19,20 @@ export async function getDashboardStats(
     needsAttention: Number(row.needs_attention ?? 0),
   };
 }
+
+export type CredentialingStats = {
+  licensesExpiring: number;
+  revalidationsDue: number;
+};
+
+export async function getCredentialingStats(
+  client: Pick<SupabaseClient, "rpc">,
+): Promise<CredentialingStats> {
+  const { data, error } = await client.rpc("credentialing_stats");
+  if (error) throw new Error(`credentialing stats failed: ${error.message}`);
+  const row = (data ?? [])[0] ?? {};
+  return {
+    licensesExpiring: Number(row.licenses_expiring ?? 0),
+    revalidationsDue: Number(row.revalidations_due ?? 0),
+  };
+}
