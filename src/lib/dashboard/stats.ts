@@ -23,6 +23,9 @@ export async function getDashboardStats(
 export type CredentialingStats = {
   licensesExpiring: number;
   revalidationsDue: number;
+  totalProviders: number;
+  pendingReview: number;
+  flagged: number;
 };
 
 export async function getCredentialingStats(
@@ -34,5 +37,8 @@ export async function getCredentialingStats(
   return {
     licensesExpiring: Number(row.licenses_expiring ?? 0),
     revalidationsDue: Number(row.revalidations_due ?? 0),
+    totalProviders: Number(row.total_providers ?? 0),
+    pendingReview: Number(row.pending_review ?? 0),
+    flagged: Number(row.flagged ?? 0),
   };
 }

@@ -46,5 +46,21 @@ describe("getCredentialingStats", () => {
     const stats = await getCredentialingStats(userClient);
     expect(stats.licensesExpiring).toBe(1);   // Dr Soon (20d), not Dr Later (120d)
     expect(stats.revalidationsDue).toBe(1);
+    expect(stats.totalProviders).toBe(2);     // Dr Soon + Dr Later
+    expect(stats.pendingReview).toBe(0);
+    expect(stats.flagged).toBe(0);
+  });
+
+  it("counts provider status (pending/flagged) and excludes soft-deleted from totals", async () => {
+    await asAdmin((q) => q(`insert into public.providers (org_id, name, status, license_expiration) values
+      ($1,'Dr Pending','pending', current_date + 200),
+      ($1,'Dr Flagged','flagged', current_date + 200),
+      ($1,'Dr Gone','active', null)`, [ORG_A]));
+    await asAdmin((q) => q(`update public.providers set deleted_at = now() where name='Dr Gone' and org_id=$1`, [ORG_A]));
+    const stats = await getCredentialingStats(userClient);
+    expect(stats.pendingReview).toBe(1);
+    expect(stats.flagged).toBe(1);
+    expect(stats.totalProviders).toBe(4);     // Dr Soon, Dr Later, Dr Pending, Dr Flagged (not Dr Gone)
+    expect(stats.licensesExpiring).toBe(1);   // the +200d licenses don't count
   });
 });
