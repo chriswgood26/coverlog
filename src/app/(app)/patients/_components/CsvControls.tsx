@@ -1,5 +1,6 @@
 "use client";
 import { importCsvAction, exportCsvAction } from "../actions";
+import { btnSecondary } from "@/lib/ui";
 
 export function CsvControls() {
   async function download() {
@@ -10,9 +11,12 @@ export function CsvControls() {
     URL.revokeObjectURL(url);
   }
   return (
-    <div className="flex gap-2">
-      <form action={importCsvAction}><input type="file" name="file" accept=".csv" className="text-sm" /><button className="ml-1 rounded border px-2 py-1 text-sm">Import</button></form>
-      <button onClick={download} className="rounded border px-2 py-1 text-sm">Export</button>
+    <div className="flex items-center gap-2">
+      <form action={importCsvAction} className="flex items-center gap-1">
+        <input type="file" name="file" accept=".csv" className="text-sm text-slate-600" />
+        <button className={btnSecondary}>Import</button>
+      </form>
+      <button onClick={download} className={btnSecondary}>Export</button>
     </div>
   );
 }

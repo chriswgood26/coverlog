@@ -6,6 +6,10 @@ import { redirect, notFound } from "next/navigation";
 import { LogCheckDrawer } from "../_components/LogCheckDrawer";
 import { resolveCoverage } from "@/lib/payers/resolve";
 import { linkPatientPayerAction, grantConsentAction, revokeConsentAction } from "../actions";
+import { PageHeader } from "@/components/ui/PageHeader";
+import { Card } from "@/components/ui/Card";
+import { Badge } from "@/components/ui/Badge";
+import { inputClass, btnPrimary, btnDangerText, theadRow, thCell, tbody, rowHover } from "@/lib/ui";
 
 export const dynamic = "force-dynamic";
 
@@ -29,83 +33,102 @@ export default async function PatientDetailPage({ params }: { params: Promise<{ 
     ? await resolveCoverage(supabase, linked.payer_master_id as string)
     : [];
   return (
-    <div className="space-y-4">
-      <h1 className="text-xl font-semibold">{patient.name as string}</h1>
+    <div className="space-y-6">
+      <PageHeader title={patient.name as string} backHref="/patients" />
       {!consent && (
-        <div className="rounded border border-amber-400 bg-amber-50 p-3 text-sm text-amber-800">
+        <div className="rounded-2xl border border-amber-200 bg-amber-50 px-5 py-4 text-sm text-amber-800">
           No valid 42 CFR Part 2 consent on file — disclosure/export is blocked for this patient.
         </div>
       )}
       <LogCheckDrawer patientId={id} />
-      <section className="space-y-2">
-        <h2 className="font-medium">Primary payer coverage</h2>
-        <form action={linkPatientPayerAction} className="flex flex-wrap gap-2 text-sm">
-          <input type="hidden" name="patientId" value={id} />
-          <select name="payerDirectoryId" defaultValue={payerDirId ?? ""} className="border p-1">
-            <option value="">— not linked —</option>
-            {(orgPayers ?? []).map((p: any) => <option key={p.id} value={p.id}>{p.payer_name}</option>)}
-          </select>
-          <button className="rounded bg-black px-2 py-1 text-white">Link payer</button>
-        </form>
-        {linked && !linked.payer_master_id && (
-          <p className="text-sm text-amber-700">Linked payer isn&apos;t mapped to a canonical payer yet — no baseline coverage to show.</p>
-        )}
-        {coverage.length > 0 && (
-          <table className="w-full text-sm">
-            <thead><tr className="border-b text-left"><th className="p-2">CPT</th><th>Covered</th><th>Prior auth</th><th>Source</th></tr></thead>
-            <tbody>
-              {coverage.map((r) => (
-                <tr key={r.cpt_code} className="border-b">
-                  <td className="p-2">{r.cpt_code}</td><td>{r.covered ? "Yes" : "No"}</td>
-                  <td>{r.requires_prior_auth ? "Yes" : "No"}</td>
-                  <td>{r.provenance === "org" ? "Your clinic" : "Coverlog baseline"}</td>
-                </tr>
-              ))}
+
+      <Card title="Primary payer coverage">
+        <div className="p-5 space-y-3">
+          <form action={linkPatientPayerAction} className="flex flex-wrap gap-2">
+            <input type="hidden" name="patientId" value={id} />
+            <select name="payerDirectoryId" defaultValue={payerDirId ?? ""} className={`${inputClass} w-auto`}>
+              <option value="">— not linked —</option>
+              {(orgPayers ?? []).map((p: any) => <option key={p.id} value={p.id}>{p.payer_name}</option>)}
+            </select>
+            <button className={btnPrimary}>Link payer</button>
+          </form>
+          {linked && !linked.payer_master_id && (
+            <p className="text-sm text-amber-700">Linked payer isn&apos;t mapped to a canonical payer yet — no baseline coverage to show.</p>
+          )}
+          {coverage.length > 0 && (
+            <table className="w-full">
+              <thead><tr className={theadRow}><th className={thCell}>CPT</th><th className={thCell}>Covered</th><th className={thCell}>Prior auth</th><th className={thCell}>Source</th></tr></thead>
+              <tbody className={tbody}>
+                {coverage.map((r) => (
+                  <tr key={r.cpt_code} className={rowHover}>
+                    <td className="px-4 py-4 text-sm text-slate-900 font-mono">{r.cpt_code}</td>
+                    <td className="px-4 py-4 text-sm text-slate-600">{r.covered ? "Yes" : "No"}</td>
+                    <td className="px-4 py-4 text-sm text-slate-600">{r.requires_prior_auth ? "Yes" : "No"}</td>
+                    <td className="px-4 py-4">
+                      <span className={`text-xs px-1.5 py-0.5 rounded ${r.provenance === "org" ? "bg-teal-100 text-teal-700" : "bg-slate-100 text-slate-500"}`}>
+                        {r.provenance === "org" ? "Your clinic" : "Coverlog baseline"}</span>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
+        </div>
+      </Card>
+
+      <Card title="Consents">
+        <div className="p-5 space-y-3">
+          <table className="w-full">
+            <thead><tr className={theadRow}><th className={thCell}>Type</th><th className={thCell}>Scope</th><th className={thCell}>Granted</th><th className={thCell}>Expires</th><th className={thCell}>Status</th><th className={thCell}></th></tr></thead>
+            <tbody className={tbody}>
+              {consents.map((c) => {
+                const active = !c.revoked_at && (!c.expires_at || new Date(c.expires_at) > new Date());
+                const status = c.revoked_at ? "revoked" : active ? "active" : "expired";
+                return (
+                  <tr key={c.id} className={rowHover}>
+                    <td className="px-4 py-4 text-sm text-slate-900">{c.consent_type}</td>
+                    <td className="px-4 py-4 text-sm text-slate-600">{c.scope ?? "—"}</td>
+                    <td className="px-4 py-4 text-sm text-slate-600">{c.granted_at?.slice(0, 10) ?? "—"}</td>
+                    <td className="px-4 py-4 text-sm text-slate-600">{c.expires_at?.slice(0, 10) ?? "—"}</td>
+                    <td className="px-4 py-4"><Badge value={status} /></td>
+                    <td className="px-4 py-4">{!c.revoked_at && (
+                      <form action={revokeConsentAction}>
+                        <input type="hidden" name="consentId" value={c.id} />
+                        <input type="hidden" name="patientId" value={id} />
+                        <button className={btnDangerText}>Revoke</button>
+                      </form>
+                    )}</td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
-        )}
-      </section>
-      <section className="space-y-2">
-        <h2 className="font-medium">Consents</h2>
-        <table className="w-full text-sm">
-          <thead><tr className="border-b text-left"><th className="p-2">Type</th><th>Scope</th><th>Granted</th><th>Expires</th><th>Status</th><th></th></tr></thead>
-          <tbody>
-            {consents.map((c) => {
-              const active = !c.revoked_at && (!c.expires_at || new Date(c.expires_at) > new Date());
-              return (
-                <tr key={c.id} className="border-b">
-                  <td className="p-2">{c.consent_type}</td><td>{c.scope ?? "—"}</td>
-                  <td>{c.granted_at?.slice(0, 10) ?? "—"}</td><td>{c.expires_at?.slice(0, 10) ?? "—"}</td>
-                  <td>{c.revoked_at ? "revoked" : active ? "active" : "expired"}</td>
-                  <td>{!c.revoked_at && (
-                    <form action={revokeConsentAction}>
-                      <input type="hidden" name="consentId" value={c.id} />
-                      <input type="hidden" name="patientId" value={id} />
-                      <button className="text-red-700 underline">Revoke</button>
-                    </form>
-                  )}</td>
-                </tr>
-              );
-            })}
+          <form action={grantConsentAction} className="flex flex-wrap gap-2">
+            <input type="hidden" name="patientId" value={id} />
+            <input name="consentType" placeholder="Type (part2_disclosure)" className={`${inputClass} w-auto`} />
+            <input name="scope" placeholder="Scope (e.g. billing)" className={`${inputClass} w-auto`} />
+            <input name="expiresAt" type="date" className={`${inputClass} w-auto`} />
+            <input name="documentRef" placeholder="Document ref" className={`${inputClass} w-auto`} />
+            <button className={btnPrimary}>Grant consent</button>
+          </form>
+        </div>
+      </Card>
+
+      <Card title="Eligibility history">
+        <table className="w-full">
+          <thead><tr className={theadRow}><th className={thCell}>Date</th><th className={thCell}>Payer</th><th className={thCell}>Status</th><th className={thCell}>Copay</th></tr></thead>
+          <tbody className={tbody}>
+            {history.map((c: any) => (
+              <tr key={c.id} className={rowHover}>
+                <td className="px-4 py-4 text-sm text-slate-600">{c.check_date}</td>
+                <td className="px-4 py-4 text-sm text-slate-600">{c.payer}</td>
+                <td className="px-4 py-4"><Badge value={c.status} /></td>
+                <td className="px-4 py-4 text-sm text-slate-600">{c.copay ?? "—"}</td>
+              </tr>
+            ))}
           </tbody>
         </table>
-        <form action={grantConsentAction} className="flex flex-wrap gap-2">
-          <input type="hidden" name="patientId" value={id} />
-          <input name="consentType" placeholder="Type (part2_disclosure)" className="border p-1" />
-          <input name="scope" placeholder="Scope (e.g. billing)" className="border p-1" />
-          <input name="expiresAt" type="date" className="border p-1" />
-          <input name="documentRef" placeholder="Document ref" className="border p-1" />
-          <button className="rounded bg-black px-2 py-1 text-white text-sm">Grant consent</button>
-        </form>
-      </section>
-      <table className="w-full text-sm">
-        <thead><tr className="border-b text-left"><th className="p-2">Date</th><th>Payer</th><th>Status</th><th>Copay</th></tr></thead>
-        <tbody>
-          {history.map((c: any) => (
-            <tr key={c.id} className="border-b"><td className="p-2">{c.check_date}</td><td>{c.payer}</td><td>{c.status}</td><td>{c.copay ?? "—"}</td></tr>
-          ))}
-        </tbody>
-      </table>
+      </Card>
     </div>
   );
 }

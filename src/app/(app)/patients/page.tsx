@@ -5,6 +5,9 @@ import { listPatients } from "@/lib/phi/access";
 import { redirect } from "next/navigation";
 import { AddPatientForm } from "./_components/AddPatientForm";
 import { CsvControls } from "./_components/CsvControls";
+import { PageHeader } from "@/components/ui/PageHeader";
+import { Badge } from "@/components/ui/Badge";
+import { tableWrap, theadRow, thCell, tbody, rowHover } from "@/lib/ui";
 
 export const dynamic = "force-dynamic";
 
@@ -15,22 +18,29 @@ export default async function PatientsPage() {
   const patients = await listPatients(supabase, ctx, {});
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <h1 className="text-xl font-semibold">Patients</h1>
+      <PageHeader title="Patients" subtitle={`${patients.length} total`}>
         <CsvControls />
-      </div>
+      </PageHeader>
       <AddPatientForm />
-      <table className="w-full text-sm">
-        <thead><tr className="border-b text-left"><th className="p-2">Name</th><th>Payer</th><th>Status</th><th>Next due</th></tr></thead>
-        <tbody>
-          {patients.map((p: any) => (
-            <tr key={p.id} className="border-b">
-              <td className="p-2"><Link href={`/patients/${p.id}`} className="underline">{p.name}</Link></td>
-              <td>{p.primary_payer ?? "—"}</td><td>{p.status}</td><td>{p.next_due ?? "—"}</td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
+      {patients.length === 0 ? (
+        <div className="p-12 text-center text-slate-400 text-sm bg-white rounded-2xl border border-slate-200">No patients yet.</div>
+      ) : (
+        <div className={tableWrap}>
+          <table className="w-full">
+            <thead><tr className={theadRow}><th className={thCell}>Name</th><th className={thCell}>Payer</th><th className={thCell}>Status</th><th className={thCell}>Next due</th></tr></thead>
+            <tbody className={tbody}>
+              {patients.map((p: any) => (
+                <tr key={p.id} className={rowHover}>
+                  <td className="px-4 py-4"><Link href={`/patients/${p.id}`} className="text-sm font-medium text-slate-900 hover:text-teal-600">{p.name}</Link></td>
+                  <td className="px-4 py-4 text-sm text-slate-600">{p.primary_payer ?? "—"}</td>
+                  <td className="px-4 py-4"><Badge value={p.status} /></td>
+                  <td className="px-4 py-4 text-sm text-slate-600">{p.next_due ?? "—"}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
     </div>
   );
 }

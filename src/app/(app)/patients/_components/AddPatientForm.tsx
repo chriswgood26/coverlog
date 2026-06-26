@@ -1,13 +1,14 @@
 "use client";
 import { addPatientAction } from "../actions";
+import { inputClass, btnPrimary } from "@/lib/ui";
 
 export function AddPatientForm() {
   return (
-    <form action={addPatientAction} className="flex gap-2">
-      <input name="name" required placeholder="Patient name" className="border p-2" />
-      <input name="memberId" placeholder="Member ID" className="border p-2" />
-      <input name="primaryPayer" placeholder="Payer" className="border p-2" />
-      <button type="submit" className="rounded bg-black px-3 py-2 text-white">Add</button>
+    <form action={addPatientAction} className="flex flex-wrap gap-2">
+      <input name="name" required placeholder="Patient name" className={`${inputClass} w-auto`} />
+      <input name="memberId" placeholder="Member ID" className={`${inputClass} w-auto`} />
+      <input name="primaryPayer" placeholder="Payer" className={`${inputClass} w-auto`} />
+      <button type="submit" className={btnPrimary}>Add</button>
     </form>
   );
 }
