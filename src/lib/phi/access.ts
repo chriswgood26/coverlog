@@ -54,6 +54,28 @@ export async function listCheckHistory(
   return rows;
 }
 
+export type PendingVerification = {
+  id: string; name: string; primary_payer: string | null; member_id: string | null;
+};
+
+// Patients pending eligibility verification — surfaces PHI (name + member id),
+// so it goes through the access log like every other PHI read.
+export async function listPendingVerifications(
+  client: any, ctx: PhiContext,
+): Promise<PendingVerification[]> {
+  const { data } = await client
+    .from("patients").select("id, name, primary_payer, member_id")
+    .eq("status", "pending").is("deleted_at", null)
+    .order("next_due", { ascending: true, nullsFirst: false });
+  const rows: PendingVerification[] = data ?? [];
+  await logAccess(client, ctx, {
+    action: "list_view",
+    patient_ids: rows.map((r) => r.id),
+    query_context: "dashboard_pending",
+  });
+  return rows;
+}
+
 export type OrgConsentRow = {
   id: string; patient_id: string; patient_name: string; consent_type: string;
   granted_at: string | null; expires_at: string | null; revoked_at: string | null;

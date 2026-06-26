@@ -65,3 +65,22 @@ export async function listEnrollmentsForProvider(
   if (error) throw new Error(`listEnrollmentsForProvider failed: ${error.message}`);
   return flattenEnrollments(data ?? []);
 }
+
+export type ExpiringCredential = {
+  id: string; name: string; license_type: string | null; license_expiration: string;
+};
+
+export async function listExpiringCredentials(
+  client: Pick<SupabaseClient, "from">,
+): Promise<ExpiringCredential[]> {
+  const cutoff = new Date();
+  cutoff.setDate(cutoff.getDate() + 60);
+  const { data, error } = await client.from("providers")
+    .select("id, name, license_type, license_expiration")
+    .is("deleted_at", null)
+    .not("license_expiration", "is", null)
+    .lte("license_expiration", cutoff.toISOString().slice(0, 10))
+    .order("license_expiration", { ascending: true });
+  if (error) throw new Error(`listExpiringCredentials failed: ${error.message}`);
+  return (data ?? []) as ExpiringCredential[];
+}
