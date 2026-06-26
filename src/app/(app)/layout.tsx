@@ -9,6 +9,9 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   const supabase = await createServerSupabase();
   const ctx = await getStaffContext(supabase);
   if (!ctx) redirect("/onboarding");
+  const { data: org } = await supabase
+    .from("organizations").select("status").eq("id", ctx.orgId).maybeSingle();
+  if (org?.status === "disabled") redirect("/org-disabled");
   return (
     <>
       <div className="fixed top-0 left-0 right-0 h-[3px] bg-teal-500 z-50" />
