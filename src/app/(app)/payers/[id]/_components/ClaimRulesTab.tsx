@@ -1,35 +1,40 @@
 import type { ResolvedClaimRule } from "@/lib/payers/resolve";
 import { saveOrgClaimRuleAction } from "../../actions";
+import { Card } from "@/components/ui/Card";
+import { inputClass, btnPrimary, theadRow, thCell, tbody, rowHover } from "@/lib/ui";
 
 export function ClaimRulesTab({ rows, payerMasterId, payerDirectoryId }:
   { rows: ResolvedClaimRule[]; payerMasterId: string | null; payerDirectoryId: string }) {
   return (
-    <section>
-      <h2 className="font-medium">Claim Rules</h2>
-      <table className="w-full text-sm">
-        <thead><tr className="border-b text-left"><th className="p-2">Category</th><th>Field</th><th>Rule</th><th>Required</th><th>Source</th></tr></thead>
-        <tbody>
+    <Card title="Claim Rules">
+      <table className="w-full">
+        <thead><tr className={theadRow}><th className={thCell}>Category</th><th className={thCell}>Field</th><th className={thCell}>Rule</th><th className={thCell}>Required</th><th className={thCell}>Source</th></tr></thead>
+        <tbody className={tbody}>
           {rows.map((r, i) => (
-            <tr key={i} className="border-b">
-              <td className="p-2">{r.rule_category ?? "—"}</td><td>{r.field_reference ?? "—"}</td>
-              <td>{r.rule_description ?? "—"}</td><td>{r.required_value ?? "—"}</td>
-              <td><span className={r.provenance === "org" ? "text-blue-700" : "text-gray-500"}>
-                {r.provenance === "org" ? "Your clinic" : "Coverlog baseline"}</span></td>
+            <tr key={i} className={rowHover}>
+              <td className="px-4 py-4 text-sm text-slate-900">{r.rule_category ?? "—"}</td>
+              <td className="px-4 py-4 text-sm text-slate-600">{r.field_reference ?? "—"}</td>
+              <td className="px-4 py-4 text-sm text-slate-600">{r.rule_description ?? "—"}</td>
+              <td className="px-4 py-4 text-sm text-slate-600">{r.required_value ?? "—"}</td>
+              <td className="px-4 py-4">
+                <span className={`text-xs px-1.5 py-0.5 rounded ${r.provenance === "org" ? "bg-teal-100 text-teal-700" : "bg-slate-100 text-slate-500"}`}>
+                  {r.provenance === "org" ? "Your clinic" : "Coverlog baseline"}</span>
+              </td>
             </tr>
           ))}
         </tbody>
       </table>
       {payerMasterId && (
-        <form action={saveOrgClaimRuleAction} className="mt-2 flex flex-wrap gap-2">
+        <form action={saveOrgClaimRuleAction} className="flex flex-wrap gap-2 px-5 py-4 border-t border-slate-100">
           <input type="hidden" name="payerMasterId" value={payerMasterId} />
           <input type="hidden" name="payerDirectoryId" value={payerDirectoryId} />
-          <input name="ruleCategory" required placeholder="Category (e.g. modifier)" className="border p-1" />
-          <input name="fieldReference" placeholder="Box 24J" className="border p-1 w-24" />
-          <input name="ruleDescription" placeholder="Rule" className="border p-1" />
-          <input name="requiredValue" placeholder="Required value" className="border p-1" />
-          <button className="rounded bg-black px-2 py-1 text-white text-sm">Save override</button>
+          <input name="ruleCategory" required placeholder="Category (e.g. modifier)" className={`${inputClass} w-auto`} />
+          <input name="fieldReference" placeholder="Box 24J" className={`${inputClass} w-28`} />
+          <input name="ruleDescription" placeholder="Rule" className={`${inputClass} w-auto`} />
+          <input name="requiredValue" placeholder="Required value" className={`${inputClass} w-auto`} />
+          <button className={btnPrimary}>Save override</button>
         </form>
       )}
-    </section>
+    </Card>
   );
 }

@@ -7,6 +7,8 @@ import { CoveredCodesTab } from "./_components/CoveredCodesTab";
 import { ClaimRulesTab } from "./_components/ClaimRulesTab";
 import { listEnrollmentsForPayer, listProviders } from "@/lib/providers/queries";
 import { EnrolledProvidersTab } from "./_components/EnrolledProvidersTab";
+import { PageHeader } from "@/components/ui/PageHeader";
+import { Card } from "@/components/ui/Card";
 
 export default async function PayerProfilePage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -30,15 +32,16 @@ export default async function PayerProfilePage({ params }: { params: Promise<{ i
 
   return (
     <div className="space-y-6">
-      <h1 className="text-xl font-semibold">{(payer as any).payer_name}</h1>
-      <section>
-        <h2 className="font-medium">Portal Access</h2>
-        <p className="text-sm">{(payer as any).portal_url
-          ? <a href={(payer as any).portal_url} target="_blank" rel="noreferrer" className="underline">Open portal</a>
-          : "No portal URL"}</p>
-        {(payer as any).login_notes && <p className="text-sm text-gray-600">{(payer as any).login_notes}</p>}
-      </section>
-      {!masterId && <p className="rounded border border-amber-400 bg-amber-50 p-3 text-sm">Link this payer to a canonical payer to see Coverlog&apos;s baseline coverage &amp; claim rules.</p>}
+      <PageHeader title={(payer as any).payer_name} backHref="/payers" />
+      <Card title="Portal Access">
+        <div className="p-5 text-sm space-y-1">
+          <p>{(payer as any).portal_url
+            ? <a href={(payer as any).portal_url} target="_blank" rel="noreferrer" className="text-teal-600 hover:text-teal-700 font-medium">Open portal</a>
+            : <span className="text-slate-400">No portal URL</span>}</p>
+          {(payer as any).login_notes && <p className="text-slate-500">{(payer as any).login_notes}</p>}
+        </div>
+      </Card>
+      {!masterId && <p className="rounded-2xl border border-amber-200 bg-amber-50 px-5 py-4 text-sm text-amber-800">Link this payer to a canonical payer to see Coverlog&apos;s baseline coverage &amp; claim rules.</p>}
       <EnrolledProvidersTab rows={enrollments} providers={providers} payerDirectoryId={id} isAdmin={ctx.role === "admin"} />
       <CoveredCodesTab rows={coverage} payerMasterId={masterId} payerDirectoryId={id} />
       <ClaimRulesTab rows={rules} payerMasterId={masterId} payerDirectoryId={id} />
