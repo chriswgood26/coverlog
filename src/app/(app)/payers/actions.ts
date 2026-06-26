@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { createServerSupabase } from "@/lib/supabase/server";
 import { getStaffContext } from "@/lib/auth/context";
 import { upsertOrgCoverage, upsertOrgClaimRule } from "@/lib/payers/mutations";
+import { upsertEnrollment } from "@/lib/providers/mutations";
 
 async function ctxOrRedirect() {
   const supabase = await createServerSupabase();
@@ -32,6 +33,23 @@ export async function saveOrgClaimRuleAction(formData: FormData) {
     fieldReference: String(formData.get("fieldReference") ?? "").trim() || undefined,
     ruleDescription: String(formData.get("ruleDescription") ?? "").trim() || undefined,
     requiredValue: String(formData.get("requiredValue") ?? "").trim() || undefined,
+  });
+  revalidatePath(`/payers/${formData.get("payerDirectoryId")}`);
+}
+
+export async function saveEnrollmentAction(formData: FormData) {
+  const { supabase, ctx } = await ctxOrRedirect();
+  if (ctx.role !== "admin") throw new Error("Admin role required");
+  await upsertEnrollment(supabase, ctx, {
+    providerId: String(formData.get("providerId")),
+    payerDirectoryId: String(formData.get("payerDirectoryId")),
+    status: String(formData.get("status") ?? "pending") as
+      "enrolled" | "pending" | "terminated" | "not_enrolled",
+    parStatus: (String(formData.get("parStatus") ?? "").trim() || undefined) as
+      "in_network" | "out_of_network" | undefined,
+    effectiveDate: String(formData.get("effectiveDate") ?? "").trim() || undefined,
+    revalidationDue: String(formData.get("revalidationDue") ?? "").trim() || undefined,
+    caqhId: String(formData.get("caqhId") ?? "").trim() || undefined,
   });
   revalidatePath(`/payers/${formData.get("payerDirectoryId")}`);
 }

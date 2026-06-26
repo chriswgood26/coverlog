@@ -5,6 +5,8 @@ import { getStaffContext } from "@/lib/auth/context";
 import { resolveCoverage, resolveClaimRules } from "@/lib/payers/resolve";
 import { CoveredCodesTab } from "./_components/CoveredCodesTab";
 import { ClaimRulesTab } from "./_components/ClaimRulesTab";
+import { listEnrollmentsForPayer, listProviders } from "@/lib/providers/queries";
+import { EnrolledProvidersTab } from "./_components/EnrolledProvidersTab";
 
 export default async function PayerProfilePage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -21,6 +23,10 @@ export default async function PayerProfilePage({ params }: { params: Promise<{ i
   const [coverage, rules] = masterId
     ? await Promise.all([resolveCoverage(supabase, masterId), resolveClaimRules(supabase, masterId)])
     : [[], []];
+  const [enrollments, providers] = await Promise.all([
+    listEnrollmentsForPayer(supabase, id),
+    listProviders(supabase),
+  ]);
 
   return (
     <div className="space-y-6">
@@ -33,6 +39,7 @@ export default async function PayerProfilePage({ params }: { params: Promise<{ i
         {(payer as any).login_notes && <p className="text-sm text-gray-600">{(payer as any).login_notes}</p>}
       </section>
       {!masterId && <p className="rounded border border-amber-400 bg-amber-50 p-3 text-sm">Link this payer to a canonical payer to see Coverlog&apos;s baseline coverage &amp; claim rules.</p>}
+      <EnrolledProvidersTab rows={enrollments} providers={providers} payerDirectoryId={id} isAdmin={ctx.role === "admin"} />
       <CoveredCodesTab rows={coverage} payerMasterId={masterId} payerDirectoryId={id} />
       <ClaimRulesTab rows={rules} payerMasterId={masterId} payerDirectoryId={id} />
     </div>

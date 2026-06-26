@@ -55,3 +55,14 @@ export async function exportCsvAction(): Promise<string> {
   const { supabase, ctx } = await ctxOrRedirect();
   return exportPatientsCsv(supabase, ctx, { purpose: "self-service export" });
 }
+
+export async function linkPatientPayerAction(formData: FormData) {
+  const { supabase } = await ctxOrRedirect();
+  const patientId = String(formData.get("patientId"));
+  const payerDirectoryId = String(formData.get("payerDirectoryId")) || null;
+  const { error } = await supabase.from("patients")
+    .update({ primary_payer_directory_id: payerDirectoryId })
+    .eq("id", patientId);
+  if (error) throw new Error(`linkPatientPayer failed: ${error.message}`);
+  revalidatePath(`/patients/${patientId}`);
+}

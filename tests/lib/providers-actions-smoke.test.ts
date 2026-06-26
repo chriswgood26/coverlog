@@ -7,3 +7,14 @@ describe("providers actions module", () => {
     }
   });
 });
+
+describe("enrollment + patient-link actions", () => {
+  it("payers actions export saveEnrollmentAction", async () => {
+    const mod = await import("@/app/(app)/payers/actions");
+    expect(typeof (mod as any).saveEnrollmentAction).toBe("function");
+  });
+  it("patients actions export linkPatientPayerAction", async () => {
+    const mod = await import("@/app/(app)/patients/actions");
+    expect(typeof (mod as any).linkPatientPayerAction).toBe("function");
+  });
+});
