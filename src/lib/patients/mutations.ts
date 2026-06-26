@@ -28,6 +28,18 @@ export async function addPatient(
   return { id: (data as { id: string }).id };
 }
 
+// Soft-delete a patient (hide from lists). RLS scopes the update to the caller's org.
+export async function softDeletePatient(
+  client: Pick<SupabaseClient, "from">, id: string,
+): Promise<void> {
+  const { error } = await client
+    .from("patients")
+    .update({ deleted_at: new Date().toISOString() })
+    .eq("id", id)
+    .is("deleted_at", null);
+  if (error) throw new Error(`softDeletePatient failed: ${error.message}`);
+}
+
 export type LogCheckInput = {
   patientId: string;
   payer?: string;

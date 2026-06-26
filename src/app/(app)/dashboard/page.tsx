@@ -31,15 +31,15 @@ export default async function DashboardPage() {
   const part = hour < 12 ? "morning" : hour < 18 ? "afternoon" : "evening";
 
   const credCards = [
-    { label: "Total Providers", value: cred.totalProviders, tint: "bg-teal-50 border-teal-100" },
-    { label: "Expiring Soon", value: cred.licensesExpiring, tint: "bg-amber-50 border-amber-100" },
-    { label: "Pending Review", value: cred.pendingReview, tint: "bg-blue-50 border-blue-100" },
-    { label: "Flagged", value: cred.flagged, tint: "bg-red-50 border-red-100" },
+    { label: "Total Providers", value: cred.totalProviders, num: "text-teal-600", href: "/providers" },
+    { label: "Expiring Soon", value: cred.licensesExpiring, num: "text-amber-600", href: "/providers" },
+    { label: "Pending Review", value: cred.pendingReview, num: "text-blue-600", href: "/providers" },
+    { label: "Flagged", value: cred.flagged, num: "text-red-600", href: "/providers" },
   ];
   const eligCards = [
-    { label: "Verified today", value: stats.verifiedToday, tint: "bg-emerald-50 border-emerald-100" },
-    { label: "Due this week", value: stats.dueThisWeek, tint: "bg-teal-50 border-teal-100" },
-    { label: "Needs attention", value: stats.needsAttention, tint: "bg-amber-50 border-amber-100" },
+    { label: "Verified today", value: stats.verifiedToday, num: "text-emerald-600", href: "/patients" },
+    { label: "Due this week", value: stats.dueThisWeek, num: "text-teal-600", href: "/patients" },
+    { label: "Needs attention", value: stats.needsAttention, num: "text-amber-600", href: "/patients" },
   ];
 
   return (
@@ -53,24 +53,24 @@ export default async function DashboardPage() {
 
       <div>
         <div className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-2">Credentialing</div>
-        <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+        <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
           {credCards.map((c) => (
-            <div key={c.label} className={`${c.tint} border rounded-2xl p-5`}>
-              <div className="text-3xl font-bold text-slate-900">{c.value}</div>
-              <div className="text-sm text-slate-500 mt-0.5">{c.label}</div>
-            </div>
+            <Link key={c.label} href={c.href} className="block bg-white border border-slate-200 rounded-xl p-4 hover:border-slate-300 hover:shadow-sm transition-colors">
+              <div className={`text-2xl font-bold ${c.num}`}>{c.value}</div>
+              <div className="text-xs text-slate-500 mt-0.5">{c.label}</div>
+            </Link>
           ))}
         </div>
       </div>
 
       <div>
         <div className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-2">Eligibility</div>
-        <div className="grid grid-cols-2 gap-4 lg:grid-cols-3">
+        <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
           {eligCards.map((c) => (
-            <div key={c.label} className={`${c.tint} border rounded-2xl p-5`}>
-              <div className="text-3xl font-bold text-slate-900">{c.value}</div>
-              <div className="text-sm text-slate-500 mt-0.5">{c.label}</div>
-            </div>
+            <Link key={c.label} href={c.href} className="block bg-white border border-slate-200 rounded-xl p-4 hover:border-slate-300 hover:shadow-sm transition-colors">
+              <div className={`text-2xl font-bold ${c.num}`}>{c.value}</div>
+              <div className="text-xs text-slate-500 mt-0.5">{c.label}</div>
+            </Link>
           ))}
         </div>
       </div>

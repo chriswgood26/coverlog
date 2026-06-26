@@ -3,7 +3,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { createServerSupabase } from "@/lib/supabase/server";
 import { getStaffContext } from "@/lib/auth/context";
-import { addPatient, logCheck } from "@/lib/patients/mutations";
+import { addPatient, logCheck, softDeletePatient } from "@/lib/patients/mutations";
 import { parsePatientsCsv } from "@/lib/csv/import";
 import { exportPatientsCsv } from "@/lib/csv/export";
 import { grantConsent, revokeConsent } from "@/lib/phi/consent";
@@ -15,13 +15,36 @@ async function ctxOrRedirect() {
   return { supabase, ctx };
 }
 
-export async function addPatientAction(formData: FormData) {
+export type AddPatientState = { error?: string; ok?: boolean } | null;
+
+export async function addPatientAction(_prev: AddPatientState, formData: FormData): Promise<AddPatientState> {
   const { supabase, ctx } = await ctxOrRedirect();
+  const name = String(formData.get("name") ?? "").trim();
+  const memberId = String(formData.get("memberId") ?? "").trim();
+  const primaryPayer = String(formData.get("primaryPayer") ?? "").trim();
+  if (!name) return { error: "Patient name is required." };
+
+  // Duplicate guard: an active patient in this org with the same name + member ID
+  // (case-insensitive; blank member ID counts as blank). RLS scopes the read to the org.
+  const { data: existing } = await supabase
+    .from("patients").select("name, member_id").eq("org_id", ctx.orgId).is("deleted_at", null);
+  const dup = (existing ?? []).some((p: { name: string | null; member_id: string | null }) =>
+    (p.name ?? "").trim().toLowerCase() === name.toLowerCase() &&
+    (p.member_id ?? "").trim().toLowerCase() === memberId.toLowerCase());
+  if (dup) {
+    return { error: `A patient named “${name}”${memberId ? ` with member ID ${memberId}` : ""} already exists.` };
+  }
+
   await addPatient(supabase, ctx, {
-    name: String(formData.get("name") ?? "").trim(),
-    memberId: String(formData.get("memberId") ?? "").trim() || undefined,
-    primaryPayer: String(formData.get("primaryPayer") ?? "").trim() || undefined,
+    name, memberId: memberId || undefined, primaryPayer: primaryPayer || undefined,
   });
+  revalidatePath("/patients");
+  return { ok: true };
+}
+
+export async function deletePatientAction(formData: FormData) {
+  const { supabase } = await ctxOrRedirect();
+  await softDeletePatient(supabase, String(formData.get("id")));
   revalidatePath("/patients");
 }
 

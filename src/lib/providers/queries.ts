@@ -14,13 +14,16 @@ export type EnrollmentRow = {
 };
 
 export async function listProviders(
-  client: Pick<SupabaseClient, "from">, opts: { search?: string } = {},
+  client: Pick<SupabaseClient, "from">, opts: { search?: string; status?: string } = {},
 ): Promise<Provider[]> {
   let query = client.from("providers")
     .select("id, name, npi, license_type, license_number, license_state, license_expiration, status, specialty, deleted_at")
     .is("deleted_at", null);
   const q = (opts.search ?? "").replace(/[,()*%"\\]/g, "").trim();
   if (q) query = query.or(`name.ilike.%${q}%,npi.ilike.%${q}%,specialty.ilike.%${q}%`);
+  if (opts.status && ["active", "pending", "flagged"].includes(opts.status)) {
+    query = query.eq("status", opts.status);
+  }
   const { data, error } = await query.order("name");
   if (error) throw new Error(`listProviders failed: ${error.message}`);
   return (data ?? []) as Provider[];

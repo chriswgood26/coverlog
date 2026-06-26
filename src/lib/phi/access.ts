@@ -28,15 +28,21 @@ export async function readPatient(
 }
 
 export async function listPatients(
-  client: any, ctx: PhiContext, opts: { search?: string } = {},
+  client: any, ctx: PhiContext, opts: { search?: string; status?: string } = {},
 ): Promise<Patient[]> {
-  const { data } = await client
-    .from("patients").select("*").is("deleted_at", null).order("next_due", { ascending: true });
+  let query = client.from("patients").select("*").is("deleted_at", null);
+  const q = (opts.search ?? "").replace(/[,()*%"\\]/g, "").trim();
+  if (q) query = query.or(`name.ilike.%${q}%,member_id.ilike.%${q}%,primary_payer.ilike.%${q}%`);
+  if (opts.status && ["verified", "pending", "inactive"].includes(opts.status)) {
+    query = query.eq("status", opts.status);
+  }
+  const { data } = await query.order("next_due", { ascending: true });
   const rows: Patient[] = data ?? [];
   await logAccess(client, ctx, {
     action: "list_view",
     patient_ids: rows.map((r) => r.id),
-    query_context: opts.search ? `search=${opts.search}` : "all",
+    query_context: [opts.search ? `search=${opts.search}` : null, opts.status ? `status=${opts.status}` : null]
+      .filter(Boolean).join(" ") || "all",
   });
   return rows;
 }
