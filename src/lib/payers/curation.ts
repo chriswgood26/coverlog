@@ -44,3 +44,42 @@ export async function upsertBaselineClaimRule(
   }, { onConflict: "payer_master_id,rule_category,field_reference,org_id" });
   if (error) throw new Error(`upsertBaselineClaimRule failed: ${error.message}`);
 }
+
+export type MasterPayer = { id: string; name: string; payer_type: string | null };
+export type BaselineCoverageRow = {
+  id: string; cpt_code: string; covered: boolean; requires_prior_auth: boolean;
+  telehealth_allowed: boolean | null; modifier_required: string | null;
+  unit_limit: string | null; notes: string | null; verified_by: string | null;
+};
+export type BaselineClaimRuleRow = {
+  id: string; rule_category: string | null; field_reference: string | null;
+  rule_description: string | null; required_value: string | null; notes: string | null;
+  verified_by: string | null;
+};
+
+export async function listMasterPayers(svc: Pick<SupabaseClient, "from">): Promise<MasterPayer[]> {
+  const { data, error } = await svc.from("payer_master")
+    .select("id, name, payer_type").order("name");
+  if (error) throw new Error(`listMasterPayers failed: ${error.message}`);
+  return (data ?? []) as MasterPayer[];
+}
+
+export async function listBaselineCoverage(
+  svc: Pick<SupabaseClient, "from">, payerMasterId: string,
+): Promise<BaselineCoverageRow[]> {
+  const { data, error } = await svc.from("payer_code_coverage")
+    .select("id, cpt_code, covered, requires_prior_auth, telehealth_allowed, modifier_required, unit_limit, notes, verified_by")
+    .eq("payer_master_id", payerMasterId).is("org_id", null).order("cpt_code");
+  if (error) throw new Error(`listBaselineCoverage failed: ${error.message}`);
+  return (data ?? []) as BaselineCoverageRow[];
+}
+
+export async function listBaselineClaimRules(
+  svc: Pick<SupabaseClient, "from">, payerMasterId: string,
+): Promise<BaselineClaimRuleRow[]> {
+  const { data, error } = await svc.from("payer_claim_rules")
+    .select("id, rule_category, field_reference, rule_description, required_value, notes, verified_by")
+    .eq("payer_master_id", payerMasterId).is("org_id", null).order("rule_category");
+  if (error) throw new Error(`listBaselineClaimRules failed: ${error.message}`);
+  return (data ?? []) as BaselineClaimRuleRow[];
+}
