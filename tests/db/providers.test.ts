@@ -12,8 +12,8 @@ const admin = createClient(URL, SERVICE, { auth: { autoRefreshToken: false, pers
 
 const CTX_A = { orgId: ORG_A, staffId: "s", role: "admin" as const };
 let payerDirA: string;
-let clientA: ReturnType<typeof createClient>;
-let clientB: ReturnType<typeof createClient>;
+let clientA: Awaited<ReturnType<typeof signedInClient>>;
+let clientB: Awaited<ReturnType<typeof signedInClient>>;
 let userIdA: string;
 let userIdB: string;
 
