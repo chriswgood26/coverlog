@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import Link from "next/link";
 import { createServerSupabase } from "@/lib/supabase/server";
 import { getStaffContext } from "@/lib/auth/context";
+import { signOutAction } from "./actions";
 
 export const dynamic = "force-dynamic";
 
@@ -17,6 +18,9 @@ export default async function AppLayout({ children }: { children: React.ReactNod
         <Link href="/payers">Payers</Link>
         <Link href="/providers">Providers</Link>
         {ctx.role === "admin" && <Link href="/admin">Admin</Link>}
+        <form action={signOutAction} className="ml-auto">
+          <button className="underline">Sign out</button>
+        </form>
       </nav>
       <main className="p-6">{children}</main>
     </div>

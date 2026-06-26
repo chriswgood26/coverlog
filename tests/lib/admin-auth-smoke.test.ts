@@ -17,3 +17,14 @@ describe("patient consent actions module", () => {
     }
   });
 });
+
+describe("auth actions modules", () => {
+  it("export signInAction / signUpAction / signOutAction", async () => {
+    const signIn = await import("@/app/sign-in/actions");
+    const signUp = await import("@/app/sign-up/actions");
+    const signOut = await import("@/app/(app)/actions");
+    expect(typeof (signIn as any).signInAction).toBe("function");
+    expect(typeof (signUp as any).signUpAction).toBe("function");
+    expect(typeof (signOut as any).signOutAction).toBe("function");
+  });
+});
