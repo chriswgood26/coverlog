@@ -19,7 +19,7 @@ export async function listProviders(
   let query = client.from("providers")
     .select("id, name, npi, license_type, license_number, license_state, license_expiration, status, specialty, deleted_at")
     .is("deleted_at", null);
-  const q = (opts.search ?? "").replace(/[,()*%]/g, "").trim();
+  const q = (opts.search ?? "").replace(/[,()*%"\\]/g, "").trim();
   if (q) query = query.or(`name.ilike.%${q}%,npi.ilike.%${q}%,specialty.ilike.%${q}%`);
   const { data, error } = await query.order("name");
   if (error) throw new Error(`listProviders failed: ${error.message}`);

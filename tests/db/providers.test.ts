@@ -157,4 +157,8 @@ describe("provider status + specialty + search", () => {
     expect(m.status).toBe("active");
     expect(m.specialty).toBe("Cardiology");
   });
+
+  it("tolerates odd characters in the search term (no throw)", async () => {
+    await expect(listProviders(clientA, { search: 'no"such)provider,(x' })).resolves.toBeInstanceOf(Array);
+  });
 });
