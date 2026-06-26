@@ -9,7 +9,7 @@ export const dynamic = "force-dynamic";
 
 const TOOLS: { name: string; desc: string; href?: string }[] = [
   { name: "Organizations", desc: "Enable or disable tenant organizations.", href: "/internal/orgs" },
-  { name: "Payer Curation", desc: "Curate the master payer list and baseline coverage / claim rules." },
+  { name: "Payer Curation", desc: "Curate the master payer list and baseline coverage / claim rules.", href: "/internal/curation" },
 ];
 
 export default async function InternalHome() {
