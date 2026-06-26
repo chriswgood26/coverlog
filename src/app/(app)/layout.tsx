@@ -14,6 +14,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
       <nav className="flex gap-4 border-b p-4 text-sm">
         <Link href="/dashboard" className="font-medium">Dashboard</Link>
         <Link href="/patients">Patients</Link>
+        <Link href="/payers">Payers</Link>
       </nav>
       <main className="p-6">{children}</main>
     </div>
