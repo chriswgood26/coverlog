@@ -66,6 +66,7 @@ describe("ensure_upcoming_access_log_partitions", () => {
     const suffix = await asAdmin(async (q) =>
       (await q(`select to_char(date_trunc('month', current_date) + interval '36 months', 'YYYY_MM') as s`)).rows[0].s);
     const tbl = `access_log_${suffix}`;
+    await asAdmin((q) => q(`drop table if exists public.${tbl}`));
     const before = await asAdmin(async (q) =>
       (await q(`select to_regclass($1) as t`, [`public.${tbl}`])).rows[0].t);
     expect(before).toBeNull();
@@ -76,5 +77,6 @@ describe("ensure_upcoming_access_log_partitions", () => {
     expect(after[0].relforcerowsecurity).toBe(true);
     // Idempotent: a second run does not error.
     await asAdmin((q) => q(`select public.ensure_upcoming_access_log_partitions(36)`));
+    await asAdmin((q) => q(`drop table if exists public.${tbl}`));
   });
 });
