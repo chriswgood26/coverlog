@@ -14,6 +14,8 @@ const CTX_A = { orgId: ORG_A, staffId: "s", role: "admin" as const };
 let payerDirA: string;
 let clientA: ReturnType<typeof createClient>;
 let clientB: ReturnType<typeof createClient>;
+let userIdA: string;
+let userIdB: string;
 
 async function signedInClient(email: string) {
   const c = createClient(URL, ANON, { auth: { persistSession: false } });
@@ -24,6 +26,8 @@ async function signedInClient(email: string) {
 beforeAll(async () => {
   const a = await admin.auth.admin.createUser({ email: "prov-a@example.com", password: "Test-Passw0rd!", email_confirm: true });
   const b = await admin.auth.admin.createUser({ email: "prov-b@example.com", password: "Test-Passw0rd!", email_confirm: true });
+  userIdA = a.data!.user!.id;
+  userIdB = b.data!.user!.id;
   await asAdmin(async (q) => {
     await q(`truncate table public.payer_enrollments, public.providers, public.payer_directory,
              public.staff, public.organizations restart identity cascade`);
@@ -39,10 +43,8 @@ beforeAll(async () => {
 });
 
 afterAll(async () => {
-  for (const email of ["prov-a@example.com", "prov-b@example.com"]) {
-    const u = (await admin.auth.admin.listUsers()).data.users.find((x) => x.email === email);
-    if (u) await admin.auth.admin.deleteUser(u.id);
-  }
+  await admin.auth.admin.deleteUser(userIdA);
+  await admin.auth.admin.deleteUser(userIdB);
   await asAdmin((q) => q(`truncate table public.payer_enrollments, public.providers,
                           public.payer_directory restart identity cascade`));
   await resetDb();

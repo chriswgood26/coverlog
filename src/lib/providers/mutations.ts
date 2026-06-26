@@ -27,7 +27,7 @@ function providerColumns(input: ProviderInput): Record<string, unknown> {
 }
 
 export async function createProvider(
-  client: Pick<SupabaseClient, "from">, ctx: StaffContext, input: ProviderInput,
+  client: Pick<SupabaseClient, "from">, ctx: StaffContext, input: ProviderInput & { name: string },
 ): Promise<{ id: string }> {
   const { data, error } = await client.from("providers")
     .insert({ org_id: ctx.orgId, ...providerColumns(input) })
@@ -54,6 +54,7 @@ export async function softDeleteProvider(
   if (error) throw new Error(`softDeleteProvider failed: ${error.message}`);
 }
 
+// Upsert = replace: omitted optional fields are written as NULL, so callers must supply the full intended enrollment state, not a partial patch.
 export async function upsertEnrollment(
   client: Pick<SupabaseClient, "from">, ctx: StaffContext, input: EnrollmentInput,
 ): Promise<void> {
