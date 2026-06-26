@@ -82,6 +82,22 @@ describe("provider mutations", () => {
     expect(rows[0]).toMatchObject({ status: "enrolled", caqh_id: "CAQH9" });
   });
 
+  it("upsertEnrollment merges: omitted fields are preserved on re-upsert", async () => {
+    const { id: providerId } = await createProvider(clientA, CTX_A, { name: "Dr Merge" });
+    await upsertEnrollment(clientA, CTX_A, {
+      providerId, payerDirectoryId: payerDirA, status: "enrolled",
+      caqhId: "CAQH-KEEP", effectiveDate: "2026-01-01" });
+    // Re-upsert changing ONLY status — caqh_id and effective_date must survive.
+    await upsertEnrollment(clientA, CTX_A, { providerId, payerDirectoryId: payerDirA, status: "terminated" });
+    const rows = await asAdmin(async (q) =>
+      (await q(`select status, caqh_id, effective_date from public.payer_enrollments
+                where provider_id=$1 and payer_id=$2`, [providerId, payerDirA])).rows);
+    expect(rows).toHaveLength(1);
+    expect(rows[0].status).toBe("terminated");
+    expect(rows[0].caqh_id).toBe("CAQH-KEEP");          // preserved, not nulled
+    expect(new Date(rows[0].effective_date).toISOString()).toContain("2026-01-01"); // preserved
+  });
+
   it("another org cannot see org A's providers (RLS)", async () => {
     const { id } = await createProvider(clientA, CTX_A, { name: "Dr Secret" });
     const { data } = await clientB.from("providers").select("id").eq("id", id);

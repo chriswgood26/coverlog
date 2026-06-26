@@ -54,16 +54,22 @@ export async function softDeleteProvider(
   if (error) throw new Error(`softDeleteProvider failed: ${error.message}`);
 }
 
-// Upsert = replace: omitted optional fields are written as NULL, so callers must supply the full intended enrollment state, not a partial patch.
+// Upsert = merge: only the fields provided are written, so omitted optional
+// fields are left unchanged on conflict-update (no accidental nulling on edit).
 export async function upsertEnrollment(
   client: Pick<SupabaseClient, "from">, ctx: StaffContext, input: EnrollmentInput,
 ): Promise<void> {
-  const { error } = await client.from("payer_enrollments").upsert({
-    org_id: ctx.orgId, provider_id: input.providerId, payer_id: input.payerDirectoryId,
-    status: input.status, par_status: input.parStatus ?? null,
-    effective_date: input.effectiveDate ?? null, termination_date: input.terminationDate ?? null,
-    revalidation_due: input.revalidationDue ?? null, caqh_id: input.caqhId ?? null,
-    notes: input.notes ?? null,
-  }, { onConflict: "org_id,provider_id,payer_id" });
+  const row: Record<string, unknown> = {
+    org_id: ctx.orgId, provider_id: input.providerId,
+    payer_id: input.payerDirectoryId, status: input.status,
+  };
+  if (input.parStatus !== undefined) row.par_status = input.parStatus;
+  if (input.effectiveDate !== undefined) row.effective_date = input.effectiveDate;
+  if (input.terminationDate !== undefined) row.termination_date = input.terminationDate;
+  if (input.revalidationDue !== undefined) row.revalidation_due = input.revalidationDue;
+  if (input.caqhId !== undefined) row.caqh_id = input.caqhId;
+  if (input.notes !== undefined) row.notes = input.notes;
+  const { error } = await client.from("payer_enrollments")
+    .upsert(row, { onConflict: "org_id,provider_id,payer_id" });
   if (error) throw new Error(`upsertEnrollment failed: ${error.message}`);
 }

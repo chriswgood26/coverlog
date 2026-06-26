@@ -34,6 +34,7 @@ export function EnrolledProvidersTab({ rows, providers, payerDirectoryId, isAdmi
           </select>
           <input name="effectiveDate" type="date" className="border p-1" />
           <input name="revalidationDue" type="date" className="border p-1" />
+          <input name="terminationDate" type="date" className="border p-1" />
           <input name="caqhId" placeholder="CAQH ID" className="border p-1 w-28" />
           <button className="rounded bg-black px-2 py-1 text-white text-sm">Save enrollment</button>
         </form>

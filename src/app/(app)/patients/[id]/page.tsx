@@ -16,13 +16,13 @@ export default async function PatientDetailPage({ params }: { params: Promise<{ 
   if (!ctx) redirect("/onboarding");
   const patient = await readPatient(supabase, ctx, id);
   if (!patient) notFound();
-  const [history, consent] = await Promise.all([
+  const [history, consent, orgPayersRes] = await Promise.all([
     listCheckHistory(supabase, ctx, id),
     hasValidConsent(supabase, id),
+    supabase.from("payer_directory").select("id, payer_name, payer_master_id").order("payer_name"),
   ]);
+  const orgPayers = orgPayersRes.data;
   const payerDirId = (patient as any).primary_payer_directory_id as string | null;
-  const { data: orgPayers } = await supabase
-    .from("payer_directory").select("id, payer_name, payer_master_id").order("payer_name");
   const linked = payerDirId ? (orgPayers ?? []).find((p: any) => p.id === payerDirId) : null;
   const coverage = linked?.payer_master_id
     ? await resolveCoverage(supabase, linked.payer_master_id as string)

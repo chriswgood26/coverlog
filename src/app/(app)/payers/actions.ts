@@ -48,8 +48,9 @@ export async function saveEnrollmentAction(formData: FormData) {
     parStatus: (String(formData.get("parStatus") ?? "").trim() || undefined) as
       "in_network" | "out_of_network" | undefined,
     effectiveDate: String(formData.get("effectiveDate") ?? "").trim() || undefined,
+    terminationDate: String(formData.get("terminationDate") ?? "").trim() || undefined,
     revalidationDue: String(formData.get("revalidationDue") ?? "").trim() || undefined,
     caqhId: String(formData.get("caqhId") ?? "").trim() || undefined,
   });
-  revalidatePath(`/payers/${formData.get("payerDirectoryId")}`);
+  revalidatePath(`/payers/${String(formData.get("payerDirectoryId"))}`);
 }
