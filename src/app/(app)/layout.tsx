@@ -16,6 +16,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
         <Link href="/patients">Patients</Link>
         <Link href="/payers">Payers</Link>
         <Link href="/providers">Providers</Link>
+        {ctx.role === "admin" && <Link href="/admin">Admin</Link>}
       </nav>
       <main className="p-6">{children}</main>
     </div>
