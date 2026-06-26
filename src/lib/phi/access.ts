@@ -101,3 +101,75 @@ export async function listOrgConsents(
     expires_at: r.expires_at, revoked_at: r.revoked_at,
   }));
 }
+
+export type AccessEntry = {
+  id: string; occurred_at: string; action: string; actor_name: string;
+  patient_id: string | null; patient_label: string;
+};
+export type DisclosureEntry = {
+  id: string; occurred_at: string; action: string; actor_name: string;
+  patient_id: string | null; patient_name: string;
+  purpose: string | null; disclosed_to: string | null;
+};
+export type AuditTrail = { access: AccessEntry[]; disclosures: DisclosureEntry[] };
+
+// Org admins' read of their own audit trail. Surfaces patient names (PHI), so it
+// logs ONE meta "audit_view" access_log entry. RLS scopes both reads to the org.
+export async function listAuditTrail(client: any, ctx: PhiContext): Promise<AuditTrail> {
+  const [accRes, discRes] = await Promise.all([
+    client.from("access_log")
+      .select("id, occurred_at, action, actor_staff_id, patient_id, patient_ids, query_context")
+      .order("occurred_at", { ascending: false }).limit(100),
+    client.from("disclosure_log")
+      .select("id, occurred_at, action, actor_staff_id, patient_id, purpose, disclosed_to")
+      .order("occurred_at", { ascending: false }).limit(100),
+  ]);
+  const accRows: any[] = accRes.data ?? [];
+  const discRows: any[] = discRes.data ?? [];
+
+  const staffIds = new Set<string>();
+  const patientIds = new Set<string>();
+  for (const r of accRows) {
+    if (r.actor_staff_id) staffIds.add(r.actor_staff_id);
+    if (r.patient_id) patientIds.add(r.patient_id);
+    for (const p of r.patient_ids ?? []) patientIds.add(p);
+  }
+  for (const r of discRows) {
+    if (r.actor_staff_id) staffIds.add(r.actor_staff_id);
+    if (r.patient_id) patientIds.add(r.patient_id);
+  }
+
+  const [staffRes, patRes] = await Promise.all([
+    staffIds.size
+      ? client.from("staff").select("id, name").in("id", [...staffIds])
+      : Promise.resolve({ data: [] }),
+    patientIds.size
+      ? client.from("patients").select("id, name").in("id", [...patientIds])
+      : Promise.resolve({ data: [] }),
+  ]);
+  const staffName = new Map<string, string>((staffRes.data ?? []).map((s: any) => [s.id, s.name]));
+  const patName = new Map<string, string>((patRes.data ?? []).map((p: any) => [p.id, p.name]));
+
+  await logAccess(client, ctx, {
+    action: "audit_view",
+    patient_ids: [...patientIds],
+    query_context: "admin_audit",
+  });
+
+  const access: AccessEntry[] = accRows.map((r) => ({
+    id: r.id, occurred_at: r.occurred_at, action: r.action,
+    actor_name: staffName.get(r.actor_staff_id) ?? "—",
+    patient_id: r.patient_id ?? null,
+    patient_label: r.patient_id
+      ? (patName.get(r.patient_id) ?? "—")
+      : (r.patient_ids?.length ? `${r.patient_ids.length} patients` : "—"),
+  }));
+  const disclosures: DisclosureEntry[] = discRows.map((r) => ({
+    id: r.id, occurred_at: r.occurred_at, action: r.action,
+    actor_name: staffName.get(r.actor_staff_id) ?? "—",
+    patient_id: r.patient_id ?? null,
+    patient_name: r.patient_id ? (patName.get(r.patient_id) ?? "—") : "—",
+    purpose: r.purpose ?? null, disclosed_to: r.disclosed_to ?? null,
+  }));
+  return { access, disclosures };
+}
